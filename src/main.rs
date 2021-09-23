@@ -14,6 +14,7 @@ struct Cli {
 
 fn main() {
     let args = Cli::from_args();
+    println!("Poll delay: {}ms", args.delay);
 
     let sleep = Duration::from_millis(args.delay);
 
