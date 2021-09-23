@@ -7,15 +7,15 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
-    /// Delay between polls
-    #[structopt(short = "d", long = "delay", default_value = "1")]
+    /// Delay between polls (ms)
+    #[structopt(short = "d", long = "delay", default_value = "1000")]
     delay: u64
 }
 
 fn main() {
     let args = Cli::from_args();
 
-    let sleep = Duration::from_secs(args.delay);
+    let sleep = Duration::from_millis(args.delay);
 
     let uj_to_j = 1000000.;
     let start_time = Instant::now();
