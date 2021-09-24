@@ -1,12 +1,10 @@
 use crate::common;
 use std::time::{Duration, Instant};
-use std::{io, thread};
-use std::io::Write;
+use std::thread;
 
 pub(crate) fn live_measurement(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
 
-    let uj_to_j = 1000000.;
     let start_time = Instant::now();
     let start_power = common::read_power();
 
@@ -14,14 +12,12 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     let mut prev_time: Instant = start_time;
     let mut watts_since_last = 0.;
 
-    print!("time{}J since start{}w since start{}w since last poll\n",
-             common::spacing(format!("time")),
-             common::spacing(format!("J since start")),
-             common::spacing(format!("w since start")));
+    common::print_headers();
+
     loop {
         let power_uj = common::read_power();
         let power_since_start = power_uj - start_power;
-        let power_j = power_since_start / uj_to_j;
+        let power_j = power_since_start / common::UJ_TO_J_FACTOR;
         let now = Instant::now();
 
         let mut watts = 0.;
@@ -35,13 +31,12 @@ pub(crate) fn live_measurement(poll_delay: u64) {
             watts_since_last = (power_j - prev_power) / now.duration_since(prev_time).as_secs_f64();
         }
 
-        let time_elapsed = start_time.elapsed().as_secs_f64();
-        print!("{:.0}{}{:.3}{}{:.3}{}{:.3}\r",
-               time_elapsed, common::spacing(format!("{:.0}", time_elapsed)),
-               power_j, common::spacing(format!("{:.3}", power_j)),
-               watts, common::spacing(format!("{:.3}", watts)),
-               watts_since_last);
-        io::stdout().flush().unwrap();
+        common::print_result_line(
+            start_time.elapsed().as_secs_f64(),
+            power_j,
+            watts,
+            watts_since_last
+        );
 
         prev_power = power_j;
         prev_time = now;
