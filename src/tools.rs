@@ -48,11 +48,17 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     }
 }
 
-pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>) {
+pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n: u64) {
     let start_time = Instant::now();
     let start_power = common::read_power();
 
-    let _out = Command::new(runner).arg(program).args(args).output().expect("Failed to execute command");
+    for i in 0..n {
+        if n > 1 {
+            println!("Running benchmark iteration {}", i + 1);
+        }
+
+        let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
+    }
 
     let end_power = common::read_power();
 

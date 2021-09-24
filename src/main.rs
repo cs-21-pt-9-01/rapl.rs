@@ -19,7 +19,6 @@ enum Cli {
         delay: u64,
     },
     #[structopt(about = "Measure power consumption of a oneshot script")]
-    // TODO: run n times
     Benchmark {
         /// Benchmark runner application, e.g., python
         #[structopt(parse(from_os_str))]
@@ -28,7 +27,10 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         program: PathBuf,
         /// Args for <program>
-        args: Vec<String>
+        args: Vec<String>,
+        /// Amount of times to run benchmark
+        #[structopt(short = "n", default_value = "1")]
+        n: u64
     },
     #[structopt(about = "Measure power consumption of an interactive application")]
     BenchmarkInt {
@@ -43,8 +45,8 @@ fn main() {
         Cli::Live { delay } => {
             tools::live_measurement(delay);
         },
-        Cli::Benchmark { runner, program, args} => {
-            tools::benchmark(runner, program, args);
+        Cli::Benchmark { runner, program, args, n} => {
+            tools::benchmark(runner, program, args, n);
         },
         Cli::BenchmarkInt { program } => {
             tools::benchmark_interactive(program);
