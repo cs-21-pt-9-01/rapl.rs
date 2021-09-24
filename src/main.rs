@@ -2,22 +2,36 @@ mod common;
 mod tools;
 
 use structopt::StructOpt;
+use std::path::PathBuf;
+use std::process;
 
 #[derive(StructOpt)]
-struct Cli {
-    /// Delay between polls (ms)
-    #[structopt(short = "d", long = "delay", default_value = "1000")]
-    delay: u64,
-    /// Perform live measurements (default)
-    #[structopt(short = "l", long = "live")]
-    live: bool
+enum Cli {
+    Live {
+        /// Delay between polls (ms)
+        #[structopt(short = "d", long = "delay", default_value = "1000")]
+        delay: u64,
+    },
+    Benchmark {
+        /// Benchmark runner application, e.g., python
+        #[structopt(parse(from_os_str))]
+        runner: PathBuf,
+        /// Benchmark program
+        #[structopt(parse(from_os_str))]
+        program: PathBuf,
+        /// Args for <program>
+        args: Vec<String>
+    }
+    // TODO: benchmark interactive - e.g., cura
 }
 
 fn main() {
-    let args = Cli::from_args();
-    println!("Poll delay: {}ms", args.delay);
-
-    if args.live {
-        tools::live_measurement(args.delay);
+    match Cli::from_args() {
+        Cli::Live { delay } => {
+            tools::live_measurement(delay);
+        },
+        Cli::Benchmark { runner, program, args} => {
+            tools::benchmark(runner, program, args);
+        },
     }
 }
