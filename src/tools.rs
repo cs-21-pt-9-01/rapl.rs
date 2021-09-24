@@ -1,6 +1,9 @@
 use crate::common;
+
 use std::time::{Duration, Instant};
 use std::thread;
+use std::path::PathBuf;
+use std::process::Command;
 
 pub(crate) fn live_measurement(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
@@ -43,4 +46,20 @@ pub(crate) fn live_measurement(poll_delay: u64) {
 
         thread::sleep(sleep);
     }
+}
+
+pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>) {
+    let start_time = Instant::now();
+    let start_power = common::read_power();
+
+    let _out = Command::new(runner).arg(program).args(args).output().expect("Failed to execute command");
+
+    let end_power = common::read_power();
+
+    let power_j = (end_power - start_power) / common::UJ_TO_J_FACTOR;
+    let watts = power_j / start_time.elapsed().as_secs_f64();
+
+    common::print_headers();
+    common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
+    println!();
 }
