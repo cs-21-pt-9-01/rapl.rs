@@ -77,7 +77,7 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
     let start_time = Instant::now();
     let start_power = common::read_power();
 
-    println!("Running application {:?}. Exit the application to stop; Ctrl+C will discard results", program);
+    println!("Running application {:?}. Ctrl+C to exit. Exiting will kill {:?} as well", program, program);
     let _out = Command::new(program).spawn().expect("Failed to execute command");
 
     common::print_headers();
