@@ -10,7 +10,7 @@ $ sudo ./target/release/raplrs
 
 ## Usage
 ```
-$ sudo ./target/release/raplrs 
+$ sudo ./raplrs 
 RAPL.rs 0.1.0
 PT10xE21
 RAPL measurement tool
@@ -26,6 +26,7 @@ SUBCOMMANDS:
     benchmark        Measure power consumption of a oneshot script
     benchmark-int    Measure power consumption of an interactive application
     help             Prints this message or the help of the given subcommand(s)
+    inline           Inline output of a given metric
     live             Live measurements
 ```
 

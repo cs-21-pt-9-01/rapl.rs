@@ -38,6 +38,7 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         program: PathBuf
     },
+    #[structopt(about = "Inline output of a given metric")]
     Inline {
         /// What to measure
         metric: String,
