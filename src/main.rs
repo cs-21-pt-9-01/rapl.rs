@@ -37,6 +37,13 @@ enum Cli {
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf
+    },
+    Inline {
+        /// What to measure
+        metric: String,
+        /// Delay between polls (ms)
+        #[structopt(short = "d", long = "delay", default_value = "1000")]
+        delay: u64
     }
 }
 
@@ -50,6 +57,9 @@ fn main() {
         },
         Cli::BenchmarkInt { program } => {
             tools::benchmark_interactive(program);
+        },
+        Cli::Inline { metric, delay } => {
+            tools::inline(metric, delay);
         }
     }
 }
