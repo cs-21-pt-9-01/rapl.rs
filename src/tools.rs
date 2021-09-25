@@ -3,7 +3,7 @@ use crate::common;
 use std::time::{Duration, Instant};
 use std::thread;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::io;
 use std::io::Write;
 
@@ -72,21 +72,25 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf) {
+pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
+    let sleep = Duration::from_millis(poll_delay);
     let start_time = Instant::now();
     let start_power = common::read_power();
 
     println!("Running application {:?}. Exit the application to stop; Ctrl+C will discard results", program);
-    let _out = Command::new(program).output().expect("Failed to execute command");
-
-    let end_power = common::read_power();
-
-    let power_j = (end_power - start_power) / common::UJ_TO_J_FACTOR;
-    let watts = power_j / start_time.elapsed().as_secs_f64();
+    let _out = Command::new(program).spawn().expect("Failed to execute command");
 
     common::print_headers();
-    common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
-    println!();
+    loop {
+        let end_power = common::read_power();
+
+        let power_j = (end_power - start_power) / common::UJ_TO_J_FACTOR;
+        let watts = power_j / start_time.elapsed().as_secs_f64();
+
+        common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
+
+        thread::sleep(sleep);
+    }
 }
 
 pub(crate) fn inline(metric: String, poll_delay: u64) {
