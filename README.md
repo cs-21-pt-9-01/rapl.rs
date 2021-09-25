@@ -111,3 +111,35 @@ Running application "cura". Exit the application to stop; Ctrl+C will discard re
 time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
 24                       561.650                  23.449                   0.000                    0.15601                  0.00016
 ```
+
+### `inline`
+Inline measurement output for different metrics.
+
+Eligible metrics: 
+- `joules`: joule consumption
+- `avg_watt`: average watt usage, accumulated since start of execution
+- `avg_watt_curr`: average watt usage, at current instant for each update
+- `watt_h`: watt hours consumed, accumulated since start of execution
+- `kwatt_h`: kilowatt hours consumed, accumulated since start of execution
+
+```
+raplrs-inline 0.1.0
+
+USAGE:
+    raplrs inline [OPTIONS] <metric>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -d, --delay <delay>    Delay between polls (ms) [default: 1000]
+
+ARGS:
+    <metric>    What to measure
+```
+
+```
+$ sudo ./raplrs inline watt_h
+0.23560
+```
