@@ -119,7 +119,7 @@ ARGS:
 
 ```
 $ sudo ./raplrs benchmark-int benchmark/interactive/cura.sh 
-Running application "./benchmark/interactive/cura.sh". Ctrl+C to exit.
+Running application "benchmark/interactive/cura.sh". Ctrl+C to exit. Exiting will kill "benchmark/interactive/cura.sh" as well
 time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
 27                       156.017                  5.776                    0.000                    0.04334                  0.00004
 ```
