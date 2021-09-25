@@ -44,10 +44,10 @@ pub(crate) fn print_result_line(time_elapsed: f64, power_j: f64, watts: f64, wat
     io::stdout().flush().unwrap();
 }
 
-fn watt_hours(power_j: f64) -> f64 {
+pub(crate) fn watt_hours(power_j: f64) -> f64 {
     return power_j / 3600.;
 }
 
-fn kwatt_hours(power_j: f64) -> f64 {
+pub(crate) fn kwatt_hours(power_j: f64) -> f64 {
     return watt_hours(power_j) / 1000.;
 }
