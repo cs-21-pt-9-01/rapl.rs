@@ -19,6 +19,15 @@ $ cargo build --release
 $ sudo ./target/release/raplrs
 ```
 
+## Other stuff
+
+### Scripts
+Scripts are located in `./benchmarks/`. We discern between three types:
+
+- `interactive`: an application that expects input, e.g., a GUI. `stdout` and `stderr` should be piped to `/dev/null`, see `./benchmark/interactive/cura.sh` for an example.
+- `macro`: larger benchmarks that perform several tasks. TBA, `./benchmark/macro`
+- `micro`: smaller benchmarks that perform a single task. `./benchmark/micro`
+
 ## Usage
 ```
 $ sudo ./raplrs 
