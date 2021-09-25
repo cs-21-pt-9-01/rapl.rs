@@ -36,7 +36,10 @@ enum Cli {
     BenchmarkInt {
         /// Benchmark program
         #[structopt(parse(from_os_str))]
-        program: PathBuf
+        program: PathBuf,
+        /// Delay between polls (ms)
+        #[structopt(short = "d", long = "delay", default_value = "1000")]
+        delay: u64
     },
     #[structopt(about = "Inline output of a given metric")]
     Inline {
@@ -56,8 +59,8 @@ fn main() {
         Cli::Benchmark { runner, program, args, n} => {
             tools::benchmark(runner, program, args, n);
         },
-        Cli::BenchmarkInt { program } => {
-            tools::benchmark_interactive(program);
+        Cli::BenchmarkInt { program, delay } => {
+            tools::benchmark_interactive(program, delay);
         },
         Cli::Inline { metric, delay } => {
             tools::inline(metric, delay);
