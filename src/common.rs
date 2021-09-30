@@ -9,7 +9,7 @@ pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 
 pub(crate) fn read_power() -> f64 {
     let file_path = "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj";
-    let power = fs::read(file_path).expect("couldnt read file");
+    let power = fs::read(file_path).expect(format!("Couldn't read file {}", file_path).as_str());
 
     return reading_as_float(&power);
 }
@@ -90,7 +90,8 @@ fn parse_rapl_dir(item: DirEntry) -> Option<models::RAPLZone> {
     }
 
     let item_path = item.path().display().to_string();
-    let item_name_data = fs::read(format!("{}/name", item_path)).expect("Couldn't read file");
+    let item_name_data = fs::read(format!("{}/name", item_path))
+        .expect(format!("Couldn't read file {}/name", item_path).as_str());
     let item_name = String::from_utf8_lossy(&item_name_data);
 
     return Some(models::RAPLZone{
