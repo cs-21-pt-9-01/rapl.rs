@@ -1,6 +1,11 @@
+use crate::models;
+
 use std::fs;
 use std::io::Write;
 use std::io;
+use std::fs::{DirEntry};
+use std::ptr::null;
+use crate::models::RAPLZone;
 
 pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 
@@ -50,4 +55,48 @@ pub(crate) fn watt_hours(power_j: f64) -> f64 {
 
 pub(crate) fn kwatt_hours(power_j: f64) -> f64 {
     return watt_hours(power_j) / 1000.;
+}
+
+pub(crate) fn list_rapl() -> Vec<models::RAPLZone> {
+    let base_path = "/sys/devices/virtual/powercap/intel-rapl/";
+    let cpus = fs::read_dir(base_path).unwrap();
+    let mut zones: Vec<models::RAPLZone> = vec![];
+
+    for cpu in cpus {
+        let pkg = parse_rapl_dir(cpu.unwrap());
+        match pkg {
+            Some(x) => zones.push(x),
+            None => continue
+        }
+
+        let path = &zones.last().unwrap().path;
+        let pkg = fs::read_dir(path).unwrap();
+
+        for core in pkg {
+            let core_zone = parse_rapl_dir(core.unwrap());
+            match core_zone {
+                Some(x) => zones.push(x),
+                None => continue
+            }
+        }
+    }
+
+    return zones;
+}
+
+fn parse_rapl_dir(item: DirEntry) -> Option<models::RAPLZone> {
+    let cleaned_item_name = item.path().display().to_string().split("/").last().unwrap().to_owned();
+
+    if !cleaned_item_name.contains("intel-rapl") {
+        return None;
+    }
+
+    let item_path = item.path().display().to_string();
+    let item_name_data = fs::read(format!("{}/name", item_path)).expect("Couldn't read file");
+    let item_name = String::from_utf8_lossy(&item_name_data);
+
+    return Some(models::RAPLZone{
+        path: item.path().display().to_string(),
+        name: item_name.to_string().replace("\n", "")
+    });
 }
