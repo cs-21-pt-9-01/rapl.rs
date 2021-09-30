@@ -192,3 +192,17 @@ fn inline_kwatt_h(poll_delay: u64) {
         thread::sleep(sleep);
     }
 }
+
+pub(crate) fn list(input: String) {
+    let choices = vec!["zones"];
+    match input.as_str() {
+        "zones" => {
+            for zone in common::list_rapl() {
+                println!("{:?}", zone);
+            }
+        },
+        _ => {
+            println!("Malformed input, valid choices: {:?}", choices);
+        }
+    }
+}

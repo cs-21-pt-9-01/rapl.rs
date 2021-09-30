@@ -1,5 +1,6 @@
 mod common;
 mod tools;
+mod models;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
@@ -48,6 +49,11 @@ enum Cli {
         /// Delay between polls (ms)
         #[structopt(short = "d", long = "delay", default_value = "1000")]
         delay: u64
+    },
+    #[structopt(about = "list")]
+    List {
+        /// What to list
+        input: String
     }
 }
 
@@ -64,6 +70,9 @@ fn main() {
         },
         Cli::Inline { metric, delay } => {
             tools::inline(metric, delay);
+        },
+        Cli::List { input } => {
+            tools::list(input);
         }
     }
 }
