@@ -3,7 +3,7 @@ use crate::common;
 use std::time::{Duration, Instant};
 use std::thread;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command};
 use std::io;
 use std::io::Write;
 

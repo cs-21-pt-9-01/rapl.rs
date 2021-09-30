@@ -4,8 +4,6 @@ use std::fs;
 use std::io::Write;
 use std::io;
 use std::fs::{DirEntry};
-use std::ptr::null;
-use crate::models::RAPLZone;
 
 pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 

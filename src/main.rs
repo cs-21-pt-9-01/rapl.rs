@@ -4,7 +4,6 @@ mod models;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
-use std::process;
 
 #[derive(StructOpt)]
 #[structopt(
