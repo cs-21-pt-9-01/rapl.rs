@@ -10,6 +10,7 @@ pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 const COLOUR_BLACK: i16 = 0;
 const DEFAULT_COLOUR: i16 = -1;
 pub(crate) const HEADER_PAIR: i16 = 1;
+pub(crate) const KEY_CODE_EXIT: i32 = 113;  // q
 
 pub(crate) fn read_power(file_path: String) -> f64 {
     let power = fs::read(format!("{}/energy_uj", file_path.to_owned())).expect(format!("Couldn't read file {}/energy_uj", file_path.to_owned()).as_str());
@@ -187,8 +188,9 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
 }
 
 pub(crate) fn setup_ncurses() {
-    ncurses::initscr();
+    let w = ncurses::initscr();
     ncurses::curs_set(ncurses::CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+    ncurses::nodelay(w, true);
 
     if ncurses::has_colors() {
         ncurses::start_color();

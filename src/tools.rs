@@ -20,8 +20,6 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     #[allow(unused_assignments)]
     let mut now = start_time;
 
-    print_headers!(true);
-
     loop {
         now = Instant::now();
         for zone in zones {
@@ -55,9 +53,15 @@ pub(crate) fn live_measurement(poll_delay: u64) {
         new_zones.clear();
 
         ncurses::clear();
+        ncprint!("Press 'q' to quit\n");
         print_result_line!(&zones, true);
 
         prev_time = now;
+
+        if ncurses::getch() == common::KEY_CODE_EXIT {
+            ncurses::endwin();
+            break;
+        }
 
         thread::sleep(sleep);
     }
@@ -112,7 +116,7 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
     #[allow(unused_assignments)]
     let mut now = start_time;
 
-    let _out = Command::new(program.to_owned()).spawn().expect("Failed to execute command");
+    let _out = Command::new(program.to_owned()).spawn().expect("Couldn't execute command");
 
     loop {
         now = Instant::now();
@@ -147,10 +151,16 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
         new_zones.clear();
 
         ncurses::clear();
-        ncprint!(format!("Running application {:?}. Ctrl+C to exit. Exiting will kill {:?} as well\n", program, program).as_str());
+        ncprint!(format!("Running application {:?}\n", program).as_str());
+        ncprint!(format!("'q' or ctrl+c to exit. Ctrl+c will kill {:?} as well\n", program).as_str());
         print_result_line!(&zones, true);
 
         prev_time = now;
+
+        if ncurses::getch() == common::KEY_CODE_EXIT {
+            ncurses::endwin();
+            break;
+        }
 
         thread::sleep(sleep);
     }
