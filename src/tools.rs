@@ -19,7 +19,7 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     let mut watts = 0.;
     let mut watts_since_last = 0.;
 
-    common::print_headers();
+    print_headers!(true);
 
     loop {
         now = Instant::now();
@@ -52,15 +52,17 @@ pub(crate) fn live_measurement(poll_delay: u64) {
         }
         zones = new_zones.to_vec();
         new_zones.clear();
-        common::print_result_line(&zones);
+        print_result_line!(&zones, true);
         prev_time = now;
         thread::sleep(sleep);
     }
 }
 
 pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n: u64) {
-    /*let start_time = Instant::now();
-    let start_power = common::read_power();
+    let mut zones = common::setup_rapl_data();
+    let mut new_zones: Vec<models::RAPLData> = vec![];
+
+    let start_time = Instant::now();
 
     for i in 0..n {
         if n > 1 {
@@ -70,14 +72,27 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
         let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
     }
 
-    let end_power = common::read_power();
+    for zone in zones {
+        let end_power = common::read_power(zone.path.to_owned());
 
-    let power_j = (end_power - start_power) / common::UJ_TO_J_FACTOR;
-    let watts = power_j / start_time.elapsed().as_secs_f64();
+        let power_j = end_power - zone.start_power;
+        let watts = power_j / start_time.elapsed().as_secs_f64();
 
-    common::print_headers();
-    common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
-    println!();*/
+        new_zones.push(models::RAPLData{
+            path: zone.path,
+            zone: zone.zone,
+            time_elapsed: start_time.elapsed().as_secs_f64(),
+            power_j,
+            watts: watts.to_owned(),
+            watts_since_last: watts,
+            start_power: zone.start_power,
+            prev_power: 0.
+        })
+    }
+
+    print_headers!();
+    print_result_line!(&new_zones);
+    println!();
 }
 
 pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
