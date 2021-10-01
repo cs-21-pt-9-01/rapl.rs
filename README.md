@@ -1,5 +1,15 @@
 # RAPL rs
 
+## Installation
+
+### Setup
+
+```
+# set exec permissions on scripts
+$ chmod -R +x benchmark/
+```
+
+### Build & run
 ```
 # build
 $ cargo build --release
@@ -7,6 +17,15 @@ $ cargo build --release
 # run
 $ sudo ./target/release/raplrs
 ```
+
+## Other stuff
+
+### Scripts
+Scripts are located in `./benchmarks/`. We discern between three types:
+
+- `interactive`: an application that expects input, e.g., a GUI. `stdout` and `stderr` should be piped to `/dev/null`, see `./benchmark/interactive/cura.sh` for an example.
+- `macro`: larger benchmarks that perform several tasks. TBA, `./benchmark/macro`
+- `micro`: smaller benchmarks that perform a single task. `./benchmark/micro`
 
 ## Usage
 ```
@@ -89,7 +108,7 @@ time (s)                 J since start            avg w since start        avg w
 ### `benchmark-int`
 Benchmark an interactive program.
 
-***Note:** if you exit this benchmark with ctrl+c you discard the results. Make sure to exit the application manually.*
+If using a tiling WM, fullscreen your IDE/terminal to avoid botched output.
 
 ```
 raplrs-benchmark-int 0.1.0
@@ -107,10 +126,10 @@ ARGS:
 ```
 
 ```
-$ sudo ./raplrs benchmark-int cura
-Running application "cura". Exit the application to stop; Ctrl+C will discard results
+$ sudo ./raplrs benchmark-int benchmark/interactive/cura.sh 
+Running application "benchmark/interactive/cura.sh". Ctrl+C to exit. Exiting will kill "benchmark/interactive/cura.sh" as well
 time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
-24                       561.650                  23.449                   0.000                    0.15601                  0.00016
+27                       156.017                  5.776                    0.000                    0.04334                  0.00004
 ```
 
 ### `inline`
