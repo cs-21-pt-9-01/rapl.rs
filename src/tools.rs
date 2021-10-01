@@ -1,4 +1,5 @@
 use crate::common;
+use crate::models;
 
 use std::time::{Duration, Instant};
 use std::thread;
@@ -9,49 +10,56 @@ use std::io::Write;
 
 pub(crate) fn live_measurement(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
+    let mut zones = common::setup_rapl_data();
+    let mut new_zones: Vec<models::RAPLData> = vec![];
 
     let start_time = Instant::now();
-    let start_power = common::read_power();
-
-    let mut prev_power: f64 = 0.;
     let mut prev_time: Instant = start_time;
+    let mut now = Instant::now();
+    let mut watts = 0.;
     let mut watts_since_last = 0.;
 
     common::print_headers();
 
     loop {
-        let power_uj = common::read_power();
-        let power_since_start = power_uj - start_power;
-        let power_j = power_since_start / common::UJ_TO_J_FACTOR;
-        let now = Instant::now();
+        now = Instant::now();
+        for zone in zones {
+            let cur_power = common::read_power(zone.path.to_owned());
+            let power_j = cur_power - zone.start_power;
 
-        let mut watts = 0.;
-        let sample_time = now.duration_since(start_time).as_secs_f64();
+            let sample_time = now.duration_since(start_time).as_secs_f64();
 
-        if sample_time > 0. {
-            watts = power_j / sample_time;
+            if sample_time > 0. {
+                watts = zone.power_j / sample_time;
+            }
+
+            if prev_time != start_time {
+                watts_since_last = (zone.power_j - zone.prev_power) / now.duration_since(prev_time).as_secs_f64();
+            }
+
+            let time_elapsed = start_time.elapsed().as_secs_f64();
+
+            new_zones.push(models::RAPLData{
+                path: zone.path,
+                zone: zone.zone,
+                time_elapsed,
+                power_j,
+                watts,
+                watts_since_last,
+                start_power: zone.start_power,
+                prev_power: zone.power_j
+            })
         }
-
-        if prev_time != start_time {
-            watts_since_last = (power_j - prev_power) / now.duration_since(prev_time).as_secs_f64();
-        }
-
-        common::print_result_line(
-            start_time.elapsed().as_secs_f64(),
-            power_j,
-            watts,
-            watts_since_last
-        );
-
-        prev_power = power_j;
+        zones = new_zones.to_vec();
+        new_zones.clear();
+        common::print_result_line(&zones);
         prev_time = now;
-
         thread::sleep(sleep);
     }
 }
 
 pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n: u64) {
-    let start_time = Instant::now();
+    /*let start_time = Instant::now();
     let start_power = common::read_power();
 
     for i in 0..n {
@@ -69,11 +77,11 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
 
     common::print_headers();
     common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
-    println!();
+    println!();*/
 }
 
 pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
-    let sleep = Duration::from_millis(poll_delay);
+    /*let sleep = Duration::from_millis(poll_delay);
     let start_time = Instant::now();
     let start_power = common::read_power();
 
@@ -90,7 +98,7 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
         common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
 
         thread::sleep(sleep);
-    }
+    }*/
 }
 
 pub(crate) fn inline(metric: String, poll_delay: u64) {
@@ -119,10 +127,10 @@ pub(crate) fn inline(metric: String, poll_delay: u64) {
 
 fn inline_joules(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power();
+    let start_power = common::read_power("".to_string());
 
     loop {
-        let cur_power = common::read_power();
+        let cur_power = common::read_power("".to_string());
 
         print!("\r{:.3}", (cur_power - start_power) / common::UJ_TO_J_FACTOR);
         io::stdout().flush().unwrap();
@@ -133,11 +141,11 @@ fn inline_joules(poll_delay: u64) {
 
 fn inline_avg_watt(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power();
+    let start_power = common::read_power("".to_string());
     let start_time = Instant::now();
 
     loop {
-        let cur_power = common::read_power();
+        let cur_power = common::read_power("".to_string());
         let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
         print!("\r{:.3}", joules / start_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
@@ -148,11 +156,11 @@ fn inline_avg_watt(poll_delay: u64) {
 
 fn inline_avg_watt_current(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
-    let mut prev_power = common::read_power();
+    let mut prev_power = common::read_power("".to_string());
     let mut prev_time = Instant::now();
 
     loop {
-        let cur_power = common::read_power();
+        let cur_power = common::read_power("".to_string());
         let joules = (cur_power - prev_power) / common::UJ_TO_J_FACTOR;
         print!("\r{:.3}", joules / prev_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
@@ -165,10 +173,10 @@ fn inline_avg_watt_current(poll_delay: u64) {
 
 fn inline_watt_h(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power();
+    let start_power = common::read_power("".to_string());
 
     loop {
-        let cur_power = common::read_power();
+        let cur_power = common::read_power("".to_string());
         let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
 
         print!("\r{:.5}", common::watt_hours(joules));
@@ -180,10 +188,10 @@ fn inline_watt_h(poll_delay: u64) {
 
 fn inline_kwatt_h(poll_delay: u64) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power();
+    let start_power = common::read_power("".to_string());
 
     loop {
-        let cur_power = common::read_power();
+        let cur_power = common::read_power("".to_string());
         let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
 
         print!("\r{:.5}", common::kwatt_hours(joules));
