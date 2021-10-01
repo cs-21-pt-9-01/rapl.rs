@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.3.23"
+ncurses = "5.101.0"

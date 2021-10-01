@@ -4,6 +4,7 @@ mod models;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
+use ncurses;
 
 #[derive(StructOpt)]
 #[structopt(
@@ -59,12 +60,14 @@ enum Cli {
 fn main() {
     match Cli::from_args() {
         Cli::Live { delay } => {
+            common::setup_ncurses();
             tools::live_measurement(delay);
         },
         Cli::Benchmark { runner, program, args, n} => {
             tools::benchmark(runner, program, args, n);
         },
         Cli::BenchmarkInt { program, delay } => {
+            common::setup_ncurses();
             tools::benchmark_interactive(program, delay);
         },
         Cli::Inline { metric, delay } => {
