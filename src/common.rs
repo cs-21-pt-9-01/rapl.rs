@@ -189,6 +189,7 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
 
 pub(crate) fn setup_ncurses() {
     ncurses::initscr();
+    ncurses::curs_set(ncurses::CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
     if ncurses::has_colors() {
         ncurses::start_color();
