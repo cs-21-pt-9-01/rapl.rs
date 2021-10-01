@@ -58,6 +58,7 @@ pub(crate) fn live_measurement(poll_delay: u64) {
         print_result_line!(&zones, true);
 
         prev_time = now;
+
         thread::sleep(sleep);
     }
 }
