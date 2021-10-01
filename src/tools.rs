@@ -15,9 +15,10 @@ pub(crate) fn live_measurement(poll_delay: u64) {
 
     let start_time = Instant::now();
     let mut prev_time: Instant = start_time;
-    let mut now = Instant::now();
     let mut watts = 0.;
     let mut watts_since_last = 0.;
+    #[allow(unused_assignments)]
+    let mut now = start_time;
 
     print_headers!(true);
 
@@ -62,7 +63,7 @@ pub(crate) fn live_measurement(poll_delay: u64) {
 }
 
 pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n: u64) {
-    let mut zones = common::setup_rapl_data();
+    let zones = common::setup_rapl_data();
     let mut new_zones: Vec<models::RAPLData> = vec![];
 
     let start_time = Instant::now();
@@ -104,10 +105,11 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
     let mut new_zones: Vec<models::RAPLData> = vec![];
 
     let start_time = Instant::now();
-    let mut now = Instant::now();
     let mut prev_time = start_time;
     let mut watts = 0.;
     let mut watts_since_last = 0.;
+    #[allow(unused_assignments)]
+    let mut now = start_time;
 
     let _out = Command::new(program.to_owned()).spawn().expect("Failed to execute command");
 

@@ -1,8 +1,6 @@
 use crate::models;
 
 use std::fs;
-use std::io::Write;
-use std::io;
 use std::fs::{DirEntry};
 use ncurses;
 
@@ -169,7 +167,7 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
     let mut zones: Vec<models::RAPLData> = vec![];
 
     for z in sys_zones {
-        let mut data = models::RAPLData{
+        let data = models::RAPLData{
             path: z.path.to_owned(),
             zone: z.name,
             time_elapsed: 0.,
