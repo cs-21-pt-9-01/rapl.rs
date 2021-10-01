@@ -1,4 +1,4 @@
-mod common;
+#[macro_use] mod common;
 mod tools;
 mod models;
 

@@ -31,7 +31,7 @@ pub(crate) fn spacing(line: String) -> String {
     return " ".repeat(col_spacing - line.len());
 }
 
-pub(crate) fn print_headers() {
+pub(crate) fn print_headers(ncurses: bool) {
     let headers = vec!["zone", "time(s)", "J", "avg watt", "avg watt curr", "w/h", "kw/h"];
     let mut line: String = "".to_owned();
 
@@ -41,13 +41,29 @@ pub(crate) fn print_headers() {
 
     line = line.trim().to_string();
     line.push_str("\n");
-    ncurses::attron(ncurses::A_BOLD());
-    ncurses::addstr(line.as_str());
-    ncurses::attroff(ncurses::A_BOLD());
-    ncurses::refresh();
+    if ncurses {
+        ncurses::attron(ncurses::A_BOLD());
+        ncurses::addstr(line.as_str());
+        ncurses::attroff(ncurses::A_BOLD());
+        ncurses::refresh();
+    } else {
+        print!("{}", line);
+    }
 }
 
-pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>) {
+#[macro_export]
+macro_rules! print_headers {
+    ($ncurses: expr) => {
+        // what the fuck
+        {crate::common::print_headers($ncurses);}
+    };
+    () => {
+        // what the fuck
+        {crate::common::print_headers(false);}
+    }
+}
+
+pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
     let mut line: String = "\r".repeat(zones.len()).to_owned();
 
     for zone in zones {
@@ -65,18 +81,27 @@ pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>) {
             line.push_str("\n");
         }
     }
-    ncurses::clear();
-    print_headers();
-    ncurses::addstr(line.as_str());
-    ncurses::refresh();
-    /*print!("\r{:.0}{}{:.3}{}{:.3}{}{:.3}{}{:.5}{}{:.5}",
-               time_elapsed, spacing(format!("{:.0}", time_elapsed)),
-               power_j, spacing(format!("{:.3}", power_j)),
-               watts, spacing(format!("{:.3}", watts)),
-               watts_since_last, spacing(format!("{:.3}", watts_since_last)),
-               watt_hours, spacing(format!("{:.5}", watt_hours)),
-               kwatt_hours);*/
-    //io::stdout().flush().unwrap();
+
+    if ncurses {
+        ncurses::clear();
+        print_headers!(true);
+        ncurses::addstr(line.as_str());
+        ncurses::refresh();
+    } else {
+        print!("{}", line);
+    }
+}
+
+#[macro_export]
+macro_rules! print_result_line {
+    ($zones: expr, $ncurses: expr) => {
+        // what the fuck
+        {crate::common::print_result_line($zones, $ncurses);}
+    };
+    ($zones: expr) => {
+        // what the fuck
+        {crate::common::print_result_line($zones, false);}
+    }
 }
 
 pub(crate) fn watt_hours(power_j: f64) -> f64 {
