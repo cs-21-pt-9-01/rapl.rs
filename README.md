@@ -10,7 +10,6 @@ $ chmod -R +x benchmark/
 ```
 
 ### Build & run
-
 ```
 # build
 $ cargo build --release
