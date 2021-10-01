@@ -12,7 +12,6 @@ const DEFAULT_COLOUR: i16 = -1;
 pub(crate) const HEADER_PAIR: i16 = 1;
 
 pub(crate) fn read_power(file_path: String) -> f64 {
-    //let file_path = "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj";
     let power = fs::read(format!("{}/energy_uj", file_path.to_owned())).expect(format!("Couldn't read file {}/energy_uj", file_path.to_owned()).as_str());
 
     return reading_as_float(&power) / UJ_TO_J_FACTOR;
