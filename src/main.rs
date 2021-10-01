@@ -1,9 +1,9 @@
-mod common;
+#[macro_use] mod common;
 mod tools;
+mod models;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
-use std::process;
 
 #[derive(StructOpt)]
 #[structopt(
@@ -48,22 +48,32 @@ enum Cli {
         /// Delay between polls (ms)
         #[structopt(short = "d", long = "delay", default_value = "1000")]
         delay: u64
+    },
+    #[structopt(about = "list")]
+    List {
+        /// What to list
+        input: String
     }
 }
 
 fn main() {
     match Cli::from_args() {
         Cli::Live { delay } => {
+            common::setup_ncurses();
             tools::live_measurement(delay);
         },
         Cli::Benchmark { runner, program, args, n} => {
             tools::benchmark(runner, program, args, n);
         },
         Cli::BenchmarkInt { program, delay } => {
+            common::setup_ncurses();
             tools::benchmark_interactive(program, delay);
         },
         Cli::Inline { metric, delay } => {
             tools::inline(metric, delay);
+        },
+        Cli::List { input } => {
+            tools::list(input);
         }
     }
 }

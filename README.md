@@ -163,3 +163,31 @@ ARGS:
 $ sudo ./raplrs inline watt_h
 0.23560
 ```
+
+### `list`
+List utility for various information.
+
+Eligible input:
+- `zones`: list all available power zones in CPU
+
+```
+raplrs-list 0.1.0
+list
+
+USAGE:
+    raplrs list <input>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <input>    What to list
+```
+
+```
+$ sudo ./raplrs list zones
+RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0", name: "package-0" }
+RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:0", name: "core" }
+RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:1", name: "uncore" }
+```
