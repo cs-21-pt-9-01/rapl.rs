@@ -7,6 +7,7 @@ pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 pub(crate) fn read_power() -> f64 {
     let file_path = "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj";
     let power = fs::read(file_path).expect("couldnt read file");
+
     return reading_as_float(&power);
 }
 
@@ -43,10 +44,10 @@ pub(crate) fn print_result_line(time_elapsed: f64, power_j: f64, watts: f64, wat
     io::stdout().flush().unwrap();
 }
 
-fn watt_hours(power_j: f64) -> f64 {
+pub(crate) fn watt_hours(power_j: f64) -> f64 {
     return power_j / 3600.;
 }
 
-fn kwatt_hours(power_j: f64) -> f64 {
+pub(crate) fn kwatt_hours(power_j: f64) -> f64 {
     return watt_hours(power_j) / 1000.;
 }
