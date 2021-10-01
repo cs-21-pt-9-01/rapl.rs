@@ -25,7 +25,9 @@ pub(crate) fn reading_as_float(reading: &Vec<u8>) -> f64 {
 }
 
 pub(crate) fn spacing(line: String) -> String {
-    let col_spacing = 25;
+    // 25 and 30 makes for fucky formatting:
+    // w/h is misaligned; line break on small monitors, respectively
+    let col_spacing = 28;
     return " ".repeat(col_spacing - line.len());
 }
 
@@ -82,6 +84,8 @@ pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
         for f in fields {
             line.push_str(format!("{:.5}{}", f, spacing(format!("{:.5}", f))).as_str());
         }
+
+        line = line.trim().to_string();
 
         if zone.zone != zones.last().unwrap().zone {
             line.push_str("\n");
