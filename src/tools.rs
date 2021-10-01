@@ -151,6 +151,7 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
         print_result_line!(&zones, true);
 
         prev_time = now;
+
         thread::sleep(sleep);
     }
 }
@@ -202,6 +203,7 @@ fn inline_avg_watt(poll_delay: u64, file_path: String) {
     loop {
         let cur_power = common::read_power(file_path.to_owned());
         let joules = cur_power - start_power;
+
         print!("\r{:.3}", joules / start_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
 
@@ -217,6 +219,7 @@ fn inline_avg_watt_current(poll_delay: u64, file_path: String) {
     loop {
         let cur_power = common::read_power(file_path.to_owned());
         let joules = cur_power - prev_power;
+
         print!("\r{:.3}", joules / prev_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
 
