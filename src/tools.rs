@@ -154,21 +154,22 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
 
 pub(crate) fn inline(metric: String, poll_delay: u64) {
     let choices = vec!["joules", "avg_watt", "avg_watt_curr", "watt_h", "kwatt_h"];
+    let file_path = "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0".to_string();
     match metric.as_str() {
         "joules" => {
-            inline_joules(poll_delay);
+            inline_joules(poll_delay, file_path);
         },
         "avg_watt" => {
-            inline_avg_watt(poll_delay);
+            inline_avg_watt(poll_delay, file_path);
         },
         "avg_watt_curr" => {
-            inline_avg_watt_current(poll_delay);
+            inline_avg_watt_current(poll_delay, file_path);
         },
         "watt_h" => {
-            inline_watt_h(poll_delay);
+            inline_watt_h(poll_delay, file_path);
         },
         "kwatt_h" => {
-            inline_kwatt_h(poll_delay);
+            inline_kwatt_h(poll_delay, file_path);
         }
         _ => {
             println!("Couldnt parse input; choices: {:?}", choices);
@@ -176,28 +177,28 @@ pub(crate) fn inline(metric: String, poll_delay: u64) {
     }
 }
 
-fn inline_joules(poll_delay: u64) {
+fn inline_joules(poll_delay: u64, file_path: String) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power("".to_string());
+    let start_power = common::read_power(file_path.to_owned());
 
     loop {
-        let cur_power = common::read_power("".to_string());
+        let cur_power = common::read_power(file_path.to_owned());
 
-        print!("\r{:.3}", (cur_power - start_power) / common::UJ_TO_J_FACTOR);
+        print!("\r{:.3}", cur_power - start_power);
         io::stdout().flush().unwrap();
 
         thread::sleep(sleep);
     }
 }
 
-fn inline_avg_watt(poll_delay: u64) {
+fn inline_avg_watt(poll_delay: u64, file_path: String) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power("".to_string());
+    let start_power = common::read_power(file_path.to_owned());
     let start_time = Instant::now();
 
     loop {
-        let cur_power = common::read_power("".to_string());
-        let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
+        let cur_power = common::read_power(file_path.to_owned());
+        let joules = cur_power - start_power;
         print!("\r{:.3}", joules / start_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
 
@@ -205,14 +206,14 @@ fn inline_avg_watt(poll_delay: u64) {
     }
 }
 
-fn inline_avg_watt_current(poll_delay: u64) {
+fn inline_avg_watt_current(poll_delay: u64, file_path: String) {
     let sleep = Duration::from_millis(poll_delay);
-    let mut prev_power = common::read_power("".to_string());
+    let mut prev_power = common::read_power(file_path.to_owned());
     let mut prev_time = Instant::now();
 
     loop {
-        let cur_power = common::read_power("".to_string());
-        let joules = (cur_power - prev_power) / common::UJ_TO_J_FACTOR;
+        let cur_power = common::read_power(file_path.to_owned());
+        let joules = cur_power - prev_power;
         print!("\r{:.3}", joules / prev_time.elapsed().as_secs_f64());
         io::stdout().flush().unwrap();
 
@@ -222,13 +223,13 @@ fn inline_avg_watt_current(poll_delay: u64) {
     }
 }
 
-fn inline_watt_h(poll_delay: u64) {
+fn inline_watt_h(poll_delay: u64, file_path: String) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power("".to_string());
+    let start_power = common::read_power(file_path.to_owned());
 
     loop {
-        let cur_power = common::read_power("".to_string());
-        let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
+        let cur_power = common::read_power(file_path.to_owned());
+        let joules = cur_power - start_power;
 
         print!("\r{:.5}", common::watt_hours(joules));
         io::stdout().flush().unwrap();
@@ -237,13 +238,13 @@ fn inline_watt_h(poll_delay: u64) {
     }
 }
 
-fn inline_kwatt_h(poll_delay: u64) {
+fn inline_kwatt_h(poll_delay: u64, file_path: String) {
     let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power("".to_string());
+    let start_power = common::read_power(file_path.to_owned());
 
     loop {
-        let cur_power = common::read_power("".to_string());
-        let joules = (cur_power - start_power) / common::UJ_TO_J_FACTOR;
+        let cur_power = common::read_power(file_path.to_owned());
+        let joules = cur_power - start_power;
 
         print!("\r{:.5}", common::kwatt_hours(joules));
         io::stdout().flush().unwrap();
