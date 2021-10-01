@@ -52,7 +52,10 @@ pub(crate) fn live_measurement(poll_delay: u64) {
         }
         zones = new_zones.to_vec();
         new_zones.clear();
+
+        ncurses::clear();
         print_result_line!(&zones, true);
+
         prev_time = now;
         thread::sleep(sleep);
     }
@@ -96,24 +99,57 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
 }
 
 pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
-    /*let sleep = Duration::from_millis(poll_delay);
+    let sleep = Duration::from_millis(poll_delay);
+    let mut zones = common::setup_rapl_data();
+    let mut new_zones: Vec<models::RAPLData> = vec![];
+
     let start_time = Instant::now();
-    let start_power = common::read_power();
+    let mut now = Instant::now();
+    let mut prev_time = start_time;
+    let mut watts = 0.;
+    let mut watts_since_last = 0.;
 
-    println!("Running application {:?}. Ctrl+C to exit. Exiting will kill {:?} as well", program, program);
-    let _out = Command::new(program).spawn().expect("Failed to execute command");
+    let _out = Command::new(program.to_owned()).spawn().expect("Failed to execute command");
 
-    common::print_headers();
     loop {
-        let end_power = common::read_power();
+        now = Instant::now();
+        for zone in zones {
+            let cur_power = common::read_power(zone.path.to_owned());
+            let power_j = cur_power - zone.start_power;
 
-        let power_j = (end_power - start_power) / common::UJ_TO_J_FACTOR;
-        let watts = power_j / start_time.elapsed().as_secs_f64();
+            let sample_time = now.duration_since(start_time).as_secs_f64();
 
-        common::print_result_line(start_time.elapsed().as_secs_f64(), power_j, watts, 0.);
+            if sample_time > 0. {
+                watts = zone.power_j / sample_time;
+            }
 
+            if prev_time != start_time {
+                watts_since_last = (zone.power_j - zone.prev_power) / now.duration_since(prev_time).as_secs_f64();
+            }
+
+            let time_elapsed = start_time.elapsed().as_secs_f64();
+
+            new_zones.push(models::RAPLData{
+                path: zone.path,
+                zone: zone.zone,
+                time_elapsed,
+                power_j,
+                watts,
+                watts_since_last,
+                start_power: zone.start_power,
+                prev_power: zone.power_j
+            })
+        }
+        zones = new_zones.to_vec();
+        new_zones.clear();
+
+        ncurses::clear();
+        ncprint!(format!("Running application {:?}. Ctrl+C to exit. Exiting will kill {:?} as well\n", program, program).as_str());
+        print_result_line!(&zones, true);
+
+        prev_time = now;
         thread::sleep(sleep);
-    }*/
+    }
 }
 
 pub(crate) fn inline(metric: String, poll_delay: u64) {
