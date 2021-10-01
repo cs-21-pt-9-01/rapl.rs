@@ -63,6 +63,14 @@ macro_rules! print_headers {
     }
 }
 
+#[macro_export]
+macro_rules! ncprint {
+    ($str: expr) => {
+        ncurses::addstr($str);
+        ncurses::refresh();
+    };
+}
+
 pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
     let mut line: String = "\r".repeat(zones.len()).to_owned();
 
@@ -83,7 +91,6 @@ pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
     }
 
     if ncurses {
-        ncurses::clear();
         print_headers!(true);
         ncurses::addstr(line.as_str());
         ncurses::refresh();
