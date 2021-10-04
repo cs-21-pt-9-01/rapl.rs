@@ -27,6 +27,16 @@ Scripts are located in `./benchmarks/`. We discern between three types:
 - `macro`: larger benchmarks that perform several tasks. TBA, `./benchmark/macro`
 - `micro`: smaller benchmarks that perform a single task. `./benchmark/micro`
 
+### CSV output
+`raplrs` outputs data from each poll in `csv` format. Sample output:
+
+```
+zone        time elapsed (s)    power used (joules)     avg watt usage          avg watt usage since last poll  start power (joules)    previous power          previous power reading
+package-0,  28.030436537,       517.9944529999993,      18.479764219175102,     17.634610487045965,             14719.149051,           500.34430299999985,     15237.143504
+core,       28.030548686,       364.91492099999596,     13.01855967970924,      11.588462316530928,             55951.045459,           353.3162470000025,      56315.96038
+uncore,     28.030660372,       39.756702999999106,     1.4183443342235091,     2.070532459219232,              4492.606319,            37.684346000000005,     4532.363022
+```
+
 ## Usage
 ```
 $ sudo ./raplrs 
