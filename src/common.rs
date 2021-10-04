@@ -19,6 +19,12 @@ pub(crate) fn read_power(file_path: String) -> f64 {
     return reading_as_float(&power) / UJ_TO_J_FACTOR;
 }
 
+pub(crate) fn read_power_limit(file_path: String) -> f64 {
+    let limit = fs::read(format!("{}/max_energy_range_uj", file_path.to_owned())).expect(format!("Couldn't read file {}/max_energy_range_uj", file_path.to_owned()).as_str());
+
+    return reading_as_float(&limit) / UJ_TO_J_FACTOR;
+}
+
 pub(crate) fn reading_as_float(reading: &Vec<u8>) -> f64 {
     let power = String::from_utf8_lossy(reading);
     let power_as_float = power.replace("\n", "").parse::<f64>().unwrap();
@@ -215,7 +221,8 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         // if our previous reading was pre-overflow, we simply add the new reading
         // otherwise we add the difference
         if zone.prev_power_reading > cur_power_j {
-            power_j = cur_power_j + zone.power_j;
+            let power_limit = read_power_limit(zone.path.to_owned());
+            power_j = (power_limit - zone.prev_power) + cur_power_j + zone.power_j;
         } else {
             power_j = (cur_power_j - zone.prev_power_reading) + zone.power_j;
         }
