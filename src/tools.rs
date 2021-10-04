@@ -1,14 +1,15 @@
 use crate::common;
 use crate::models;
+use crate::logger;
 
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::path::PathBuf;
 use std::process::{Command};
 use std::io;
 use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
     let mut new_zones: Vec<models::RAPLData> = vec![];
@@ -21,9 +22,11 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     loop {
         now = Instant::now();
         for zone in zones {
-            new_zones.push(common::calculate_power_metrics(
+            let new_zone = common::calculate_power_metrics(
                 zone, now, start_time, prev_time
-            ));
+            );
+            logger::log_poll_result(system_start_time, "live".to_string(), new_zone.to_owned());
+            new_zones.push(new_zone);
         }
         zones = new_zones.to_vec();
         new_zones.clear();
@@ -69,7 +72,7 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
+pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime) {
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
     let mut new_zones: Vec<models::RAPLData> = vec![];
@@ -84,9 +87,11 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
     loop {
         now = Instant::now();
         for zone in zones {
-            new_zones.push(common::calculate_power_metrics(
+            let new_zone = common::calculate_power_metrics(
                 zone, now, start_time, prev_time
-            ));
+            );
+            logger::log_poll_result(system_start_time, "benchmark-int".to_string(), new_zone.to_owned());
+            new_zones.push(new_zone);
         }
         zones = new_zones.to_vec();
         new_zones.clear();
