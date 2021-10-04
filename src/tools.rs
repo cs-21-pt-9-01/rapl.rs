@@ -15,8 +15,6 @@ pub(crate) fn live_measurement(poll_delay: u64) {
 
     let start_time = Instant::now();
     let mut prev_time: Instant = start_time;
-    let mut watts = 0.;
-    let mut watts_since_last = 0.;
     #[allow(unused_assignments)]
     let mut now = start_time;
 
@@ -25,31 +23,9 @@ pub(crate) fn live_measurement(poll_delay: u64) {
     loop {
         now = Instant::now();
         for zone in zones {
-            let cur_power = common::read_power(zone.path.to_owned());
-            let power_j = cur_power - zone.start_power;
-
-            let sample_time = now.duration_since(start_time).as_secs_f64();
-
-            if sample_time > 0. {
-                watts = zone.power_j / sample_time;
-            }
-
-            if prev_time != start_time {
-                watts_since_last = (zone.power_j - zone.prev_power) / now.duration_since(prev_time).as_secs_f64();
-            }
-
-            let time_elapsed = start_time.elapsed().as_secs_f64();
-
-            new_zones.push(models::RAPLData{
-                path: zone.path,
-                zone: zone.zone,
-                time_elapsed,
-                power_j,
-                watts,
-                watts_since_last,
-                start_power: zone.start_power,
-                prev_power: zone.power_j
-            })
+            new_zones.push(common::calculate_power_metrics(
+                zone, now, start_time, prev_time
+            ));
         }
         zones = new_zones.to_vec();
         new_zones.clear();
@@ -77,22 +53,11 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
         let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
     }
 
+    let now = Instant::now();
     for zone in zones {
-        let end_power = common::read_power(zone.path.to_owned());
-
-        let power_j = end_power - zone.start_power;
-        let watts = power_j / start_time.elapsed().as_secs_f64();
-
-        new_zones.push(models::RAPLData{
-            path: zone.path,
-            zone: zone.zone,
-            time_elapsed: start_time.elapsed().as_secs_f64(),
-            power_j,
-            watts: watts.to_owned(),
-            watts_since_last: watts,
-            start_power: zone.start_power,
-            prev_power: 0.
-        })
+        new_zones.push(common::calculate_power_metrics(
+            zone, now, start_time, start_time
+        ));
     }
 
     print_headers!();
@@ -107,8 +72,6 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
 
     let start_time = Instant::now();
     let mut prev_time = start_time;
-    let mut watts = 0.;
-    let mut watts_since_last = 0.;
     #[allow(unused_assignments)]
     let mut now = start_time;
 
@@ -117,31 +80,9 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64) {
     loop {
         now = Instant::now();
         for zone in zones {
-            let cur_power = common::read_power(zone.path.to_owned());
-            let power_j = cur_power - zone.start_power;
-
-            let sample_time = now.duration_since(start_time).as_secs_f64();
-
-            if sample_time > 0. {
-                watts = zone.power_j / sample_time;
-            }
-
-            if prev_time != start_time {
-                watts_since_last = (zone.power_j - zone.prev_power) / now.duration_since(prev_time).as_secs_f64();
-            }
-
-            let time_elapsed = start_time.elapsed().as_secs_f64();
-
-            new_zones.push(models::RAPLData{
-                path: zone.path,
-                zone: zone.zone,
-                time_elapsed,
-                power_j,
-                watts,
-                watts_since_last,
-                start_power: zone.start_power,
-                prev_power: zone.power_j
-            })
+            new_zones.push(common::calculate_power_metrics(
+                zone, now, start_time, prev_time
+            ));
         }
         zones = new_zones.to_vec();
         new_zones.clear();
