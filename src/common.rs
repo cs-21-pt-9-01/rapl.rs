@@ -2,6 +2,8 @@ use crate::models;
 
 use std::fs;
 use std::fs::{DirEntry};
+use std::time::Instant;
+
 use ncurses;
 
 pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
@@ -170,15 +172,17 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
     let mut zones: Vec<models::RAPLData> = vec![];
 
     for z in sys_zones {
+        let start_power = read_power(z.path.to_owned());
         let data = models::RAPLData{
-            path: z.path.to_owned(),
+            path: z.path,
             zone: z.name,
             time_elapsed: 0.,
             power_j: 0.,
             watts: 0.,
             watts_since_last: 0.,
-            start_power: read_power(z.path),
-            prev_power: 0.
+            start_power,
+            prev_power: 0.,
+            prev_power_reading: start_power
         };
         zones.push(data);
     }
@@ -193,5 +197,50 @@ pub(crate) fn setup_ncurses() {
     if ncurses::has_colors() {
         ncurses::start_color();
         ncurses::init_pair(HEADER_PAIR, COLOUR_BLACK, DEFAULT_COLOUR);
+    }
+}
+
+pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
+                                      start_time: Instant, prev_time: Instant) -> models::RAPLData {
+    let cur_power_j = read_power(zone.path.to_owned());
+
+    #[allow(unused_assignments)]
+    let mut power_j = 0.;
+    let mut watts = 0.;
+    let mut watts_since_last = 0.;
+
+    // if RAPL overflow has occurred
+    // or if we have done a full RAPL cycle
+    if zone.start_power >= cur_power_j || zone.power_j >= cur_power_j {
+        // if our previous reading was pre-overflow, we simply add the new reading
+        // otherwise we add the difference
+        if zone.prev_power_reading > cur_power_j {
+            power_j = cur_power_j + zone.power_j;
+        } else {
+            power_j = (cur_power_j - zone.prev_power_reading) + zone.power_j;
+        }
+    } else {
+        power_j = cur_power_j - zone.start_power;
+    }
+
+    let sample_time = now.duration_since(start_time).as_secs_f64();
+    if sample_time > 0. {
+        watts = power_j / sample_time;
+    }
+
+    if prev_time > start_time {
+        watts_since_last = (power_j - zone.power_j) / now.duration_since(prev_time).as_secs_f64();
+    }
+
+    return models::RAPLData{
+        path: zone.path,
+        zone: zone.zone,
+        time_elapsed: start_time.elapsed().as_secs_f64(),
+        power_j,
+        watts,
+        watts_since_last,
+        start_power: zone.start_power,
+        prev_power: zone.power_j,
+        prev_power_reading: cur_power_j
     }
 }
