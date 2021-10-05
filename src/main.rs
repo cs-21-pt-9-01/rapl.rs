@@ -2,6 +2,7 @@
 mod tools;
 mod models;
 mod logger;
+mod task;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
@@ -32,7 +33,10 @@ enum Cli {
         args: Vec<String>,
         /// Amount of times to run benchmark
         #[structopt(short = "n", default_value = "1")]
-        n: u64
+        n: u64,
+        /// Delay between polls (ms)
+        #[structopt(short = "d", long = "delay", default_value = "1000")]
+        delay: u64
     },
     #[structopt(about = "Measure power consumption of an interactive application")]
     BenchmarkInt {
@@ -65,8 +69,8 @@ fn main() {
             common::setup_ncurses();
             tools::live_measurement(delay, system_start_time);
         },
-        Cli::Benchmark { runner, program, args, n} => {
-            tools::benchmark(runner, program, args, n);
+        Cli::Benchmark { runner, program, args, n, delay} => {
+            tools::benchmark(delay, runner, program, args, n, system_start_time);
         },
         Cli::BenchmarkInt { program, delay } => {
             common::setup_ncurses();
