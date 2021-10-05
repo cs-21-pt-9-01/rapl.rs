@@ -8,16 +8,22 @@ use std::path::PathBuf;
 #[derive(StructOpt)]
 #[structopt(
     name = "RAPL.rs",
-    author = "PT10xE21",
+    author = "cs-21-pt-9-01",
     about = "RAPL measurement tool",
 )]
-enum Cli {
+struct Cli {
+    /// Delay between polls (ms)
+    #[structopt(short = "d", long = "delay", default_value = "1000")]
+    delay: u64,
+    /// Tool to use
+    #[structopt(subcommand)]
+    tool: Tool
+}
+
+#[derive(StructOpt)]
+enum Tool {
     #[structopt(about = "Live measurements")]
-    Live {
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64,
-    },
+    Live {},
     #[structopt(about = "Measure power consumption of a oneshot script")]
     Benchmark {
         /// Benchmark runner application, e.g., python
@@ -37,19 +43,13 @@ enum Cli {
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf,
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64
     },
     #[structopt(about = "Inline output of a given metric")]
     Inline {
         /// What to measure
         metric: String,
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64
     },
-    #[structopt(about = "list")]
+    #[structopt(about = "List utility for various RAPL-related information")]
     List {
         /// What to list
         input: String
@@ -57,22 +57,23 @@ enum Cli {
 }
 
 fn main() {
-    match Cli::from_args() {
-        Cli::Live { delay } => {
+    let args = Cli::from_args();
+    match args.tool {
+        Tool::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(delay);
+            tools::live_measurement(args.delay);
         },
-        Cli::Benchmark { runner, program, args, n} => {
+        Tool::Benchmark { runner, program, args, n} => {
             tools::benchmark(runner, program, args, n);
         },
-        Cli::BenchmarkInt { program, delay } => {
+        Tool::BenchmarkInt { program} => {
             common::setup_ncurses();
-            tools::benchmark_interactive(program, delay);
+            tools::benchmark_interactive(program, args.delay);
         },
-        Cli::Inline { metric, delay } => {
-            tools::inline(metric, delay);
+        Tool::Inline { metric} => {
+            tools::inline(metric, args.delay);
         },
-        Cli::List { input } => {
+        Tool::List { input } => {
             tools::list(input);
         }
     }
