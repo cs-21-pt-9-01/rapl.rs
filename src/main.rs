@@ -11,16 +11,22 @@ use std::time::SystemTime;
 #[derive(StructOpt)]
 #[structopt(
     name = "RAPL.rs",
-    author = "PT10xE21",
+    author = "cs-21-pt-9-01",
     about = "RAPL measurement tool",
 )]
-enum Cli {
+struct Cli {
+    /// Delay between polls (ms)
+    #[structopt(short = "d", long = "delay", default_value = "1000")]
+    delay: u64,
+    /// Tool to use
+    #[structopt(subcommand)]
+    tool: Tool
+}
+
+#[derive(StructOpt)]
+enum Tool {
     #[structopt(about = "Live measurements")]
-    Live {
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64,
-    },
+    Live {},
     #[structopt(about = "Measure power consumption of a oneshot script")]
     Benchmark {
         /// Benchmark runner application, e.g., python
@@ -33,29 +39,20 @@ enum Cli {
         args: Vec<String>,
         /// Amount of times to run benchmark
         #[structopt(short = "n", default_value = "1")]
-        n: u64,
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64
+        n: u64
     },
     #[structopt(about = "Measure power consumption of an interactive application")]
     BenchmarkInt {
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf,
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64
     },
     #[structopt(about = "Inline output of a given metric")]
     Inline {
         /// What to measure
         metric: String,
-        /// Delay between polls (ms)
-        #[structopt(short = "d", long = "delay", default_value = "1000")]
-        delay: u64
     },
-    #[structopt(about = "list")]
+    #[structopt(about = "List utility for various RAPL-related information")]
     List {
         /// What to list
         input: String
@@ -64,22 +61,23 @@ enum Cli {
 
 fn main() {
     let system_start_time = SystemTime::now();
-    match Cli::from_args() {
-        Cli::Live { delay } => {
+    let args = Cli::from_args();
+    match args.tool() {
+        Cli::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(delay, system_start_time);
+            tools::live_measurement(args.delay, system_start_time);
         },
-        Cli::Benchmark { runner, program, args, n, delay} => {
-            tools::benchmark(delay, runner, program, args, n, system_start_time);
+        Cli::Benchmark { runner, program, args, n } => {
+            tools::benchmark(args.delay, runner, program, args, n, system_start_time);
         },
-        Cli::BenchmarkInt { program, delay } => {
+        Tool::BenchmarkInt { program} => {
             common::setup_ncurses();
-            tools::benchmark_interactive(program, delay, system_start_time);
+            tools::benchmark_interactive(program, args.delay, system_start_time);
         },
-        Cli::Inline { metric, delay } => {
-            tools::inline(metric, delay);
+        Tool::Inline { metric} => {
+            tools::inline(metric, args.delay);
         },
-        Cli::List { input } => {
+        Tool::List { input } => {
             tools::list(input);
         }
     }

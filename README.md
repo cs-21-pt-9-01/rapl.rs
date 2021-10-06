@@ -41,23 +41,26 @@ A full sample log can be found in `./logs/`.
 
 ## Usage
 ```
-$ sudo ./raplrs 
 RAPL.rs 0.1.0
-PT10xE21
+cs-21-pt-9-01
 RAPL measurement tool
 
 USAGE:
-    raplrs <SUBCOMMAND>
+    raplrs [OPTIONS] <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
+
+OPTIONS:
+    -d, --delay <delay>    Delay between polls (ms) [default: 1000]
 
 SUBCOMMANDS:
     benchmark        Measure power consumption of a oneshot script
     benchmark-int    Measure power consumption of an interactive application
     help             Prints this message or the help of the given subcommand(s)
     inline           Inline output of a given metric
+    list             List utility for various RAPL-related information
     live             Live measurements
 ```
 
@@ -74,15 +77,15 @@ USAGE:
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-
-OPTIONS:
-    -d, --delay <delay>    Delay between polls (ms) [default: 1000]
 ```
 
 ```
 $ sudo ./raplrs live
-time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
-39                       824.494                  21.137                   21.565                   0.22903                  0.00023
+Press 'q' to quit
+zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
+package-0                   21.01861                    401.94149                   19.12318                    19.61201                    0.11165                     0.00011
+core                        21.01864                    298.07888                   14.18170                    13.46358                    0.08280                     0.00008
+uncore                      21.01866                    20.68407                    0.98409                     2.15952                     0.00575                     0.00001
 ```
 
 ### `benchmark`
@@ -113,14 +116,14 @@ $ sudo ./raplrs benchmark /usr/bin/bash benchmark/micro/fib.sh -n 3
 Running benchmark iteration 1
 Running benchmark iteration 2
 Running benchmark iteration 3
-time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
-8                        206.469                  27.236                   0.000                    0.05735                  0.00006
+zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
+package-0                   5.76740                     116.93481                   20.27543                    0.00000                     0.03248                     0.00003
+core                        5.76744                     89.69783                    15.55278                    0.00000                     0.02492                     0.00002
+uncore                      5.76750                     4.55624                     0.79001                     0.00000                     0.00127                     0.00000
 ```
 
 ### `benchmark-int`
 Benchmark an interactive program.
-
-If using a tiling WM, fullscreen your IDE/terminal to avoid botched output.
 
 ```
 raplrs-benchmark-int 0.1.0
@@ -139,9 +142,12 @@ ARGS:
 
 ```
 $ sudo ./raplrs benchmark-int benchmark/interactive/cura.sh 
-Running application "benchmark/interactive/cura.sh". Ctrl+C to exit. Exiting will kill "benchmark/interactive/cura.sh" as well
-time (s)                 J since start            avg w since start        avg w since last poll    w/h                      kw/h
-27                       156.017                  5.776                    0.000                    0.04334                  0.00004
+Running application "benchmark/interactive/cura.sh"
+'q' or ctrl+c to exit. Ctrl+c will kill "benchmark/interactive/cura.sh" as well
+zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
+package-0                   24.02615                    473.20264                   19.69537                    20.30874                    0.13145                     0.00013
+core                        24.02617                    346.57723                   14.42504                    14.78349                    0.09627                     0.00010
+uncore                      24.02619                    28.36818                    1.18072                     1.53713                     0.00788                     0.00001
 ```
 
 ### `inline`
@@ -163,9 +169,6 @@ USAGE:
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-
-OPTIONS:
-    -d, --delay <delay>    Delay between polls (ms) [default: 1000]
 
 ARGS:
     <metric>    What to measure

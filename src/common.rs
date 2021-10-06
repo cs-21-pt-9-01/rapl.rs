@@ -228,7 +228,7 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         // otherwise we add the difference
         if zone.prev_power_reading > cur_power_j {
             let power_limit = read_power_limit(zone.path.to_owned());
-            power_j = (power_limit - zone.prev_power) + cur_power_j + zone.power_j;
+            power_j = (power_limit - zone.prev_power_reading) + cur_power_j + zone.power_j;
         } else {
             power_j = (cur_power_j - zone.prev_power_reading) + zone.power_j;
         }
