@@ -1,12 +1,10 @@
 use crate::common;
 use crate::models;
-use crate::logger;
 
 use std::thread;
 use std::time::{Instant, SystemTime};
 use std::thread::JoinHandle;
 use std::sync::mpsc::Receiver;
-use std::borrow::Borrow;
 
 pub(crate) fn spawn_measurement_thread(start_time: Instant, system_start_time: SystemTime,
                                        recv: Receiver<i8>, poll_delay: u64, tool_name: String) -> JoinHandle<()> {
