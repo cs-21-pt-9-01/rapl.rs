@@ -8,9 +8,6 @@ use std::thread::JoinHandle;
 use std::sync::mpsc::Receiver;
 use std::borrow::Borrow;
 
-// TODO: static dir for logs
-// TODO: chown log files to user
-// TODO: add sample log
 pub(crate) fn spawn_measurement_thread(start_time: Instant, system_start_time: SystemTime,
                                        recv: Receiver<i8>, poll_delay: u64, tool_name: String) -> JoinHandle<()> {
     let thr = thread::spawn(move || {
