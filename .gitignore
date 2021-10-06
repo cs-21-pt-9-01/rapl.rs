@@ -2,3 +2,4 @@ target
 main
 .idea
 Cargo.lock
+*.csv
