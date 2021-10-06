@@ -2,6 +2,7 @@
 mod tools;
 mod models;
 mod logger;
+mod task;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
@@ -60,21 +61,21 @@ enum Tool {
 
 fn main() {
     let system_start_time = SystemTime::now();
-    let args = Cli::from_args();
-    match args.tool {
+    let args_ = Cli::from_args();
+    match args_.tool {
         Tool::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(args.delay, system_start_time);
+            tools::live_measurement(args_.delay, system_start_time);
         },
-        Tool::Benchmark { runner, program, args, n} => {
-            tools::benchmark(runner, program, args, n);
+        Tool::Benchmark { runner, program, args, n } => {
+            tools::benchmark(args_.delay, runner, program, args, n, system_start_time);
         },
         Tool::BenchmarkInt { program} => {
             common::setup_ncurses();
-            tools::benchmark_interactive(program, args.delay, system_start_time);
+            tools::benchmark_interactive(program, args_.delay, system_start_time);
         },
         Tool::Inline { metric} => {
-            tools::inline(metric, args.delay);
+            tools::inline(metric, args_.delay);
         },
         Tool::List { input } => {
             tools::list(input);

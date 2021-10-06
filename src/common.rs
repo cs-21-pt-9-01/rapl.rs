@@ -1,8 +1,9 @@
 use crate::models;
+use crate::logger;
 
 use std::fs;
 use std::fs::{DirEntry};
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 use ncurses;
 
@@ -13,6 +14,9 @@ const COLOUR_BLACK: i16 = 0;
 const DEFAULT_COLOUR: i16 = -1;
 pub(crate) const HEADER_PAIR: i16 = 1;
 pub(crate) const KEY_CODE_EXIT: i32 = 113;  // q
+
+// threads
+pub(crate) const THREAD_KILL: i8 = 1;
 
 pub(crate) fn read_power(file_path: String) -> f64 {
     let power = fs::read(format!("{}/energy_uj", file_path.to_owned())).expect(format!("Couldn't read file {}/energy_uj", file_path.to_owned()).as_str());
@@ -252,4 +256,17 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         prev_power: zone.power_j,
         prev_power_reading: cur_power_j
     }
+}
+
+pub(crate) fn update_measurements(zones: Vec<models::RAPLData>, now: Instant, start_time: Instant,
+                                  prev_time: Instant, system_start_time: SystemTime, tool_name: String) -> Vec<models::RAPLData> {
+    let mut res: Vec<models::RAPLData> = vec![];
+
+    for zone in zones {
+        let new_zone = calculate_power_metrics(zone, now, start_time, prev_time);
+        logger::log_poll_result(system_start_time, tool_name.to_owned(), new_zone.to_owned());
+        res.push(new_zone);
+    }
+
+    return res.to_vec();
 }

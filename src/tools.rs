@@ -1,18 +1,18 @@
 use crate::common;
-use crate::models;
-use crate::logger;
+use crate::task;
 
 use std::time::{Duration, Instant, SystemTime};
 use std::thread;
+use std::sync::mpsc;
 use std::path::PathBuf;
 use std::process::{Command};
 use std::io;
 use std::io::Write;
 
 pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
+    let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
-    let mut new_zones: Vec<models::RAPLData> = vec![];
 
     let start_time = Instant::now();
     let mut prev_time: Instant = start_time;
@@ -21,15 +21,9 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
 
     loop {
         now = Instant::now();
-        for zone in zones {
-            let new_zone = common::calculate_power_metrics(
-                zone, now, start_time, prev_time
-            );
-            logger::log_poll_result(system_start_time, "live".to_string(), new_zone.to_owned());
-            new_zones.push(new_zone);
-        }
-        zones = new_zones.to_vec();
-        new_zones.clear();
+        zones = common::update_measurements(
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+        );
 
         ncurses::clear();
         ncprint!("Press 'q' to quit\n");
@@ -46,11 +40,14 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
     }
 }
 
-pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n: u64) {
+pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args: Vec<String>,
+                        n: u64, system_start_time: SystemTime) {
+    let tool_name = "benchmark".to_string();
     let zones = common::setup_rapl_data();
-    let mut new_zones: Vec<models::RAPLData> = vec![];
-
     let start_time = Instant::now();
+
+    let (send, recv) = mpsc::channel();
+    let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
 
     for i in 0..n {
         if n > 1 {
@@ -60,12 +57,13 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
         let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
     }
 
+    send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
+    thr.join().expect("Failed to wait for measurement thread to finish");
+
     let now = Instant::now();
-    for zone in zones {
-        new_zones.push(common::calculate_power_metrics(
-            zone, now, start_time, start_time
-        ));
-    }
+    let new_zones = common::update_measurements(
+        zones, now, start_time, start_time, system_start_time, tool_name.to_owned()
+    );
 
     print_headers!();
     print_result_line!(&new_zones);
@@ -73,9 +71,9 @@ pub(crate) fn benchmark(runner: PathBuf, program: PathBuf, args: Vec<String>, n:
 }
 
 pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime) {
+    let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
-    let mut new_zones: Vec<models::RAPLData> = vec![];
 
     let start_time = Instant::now();
     let mut prev_time = start_time;
@@ -86,15 +84,9 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
 
     loop {
         now = Instant::now();
-        for zone in zones {
-            let new_zone = common::calculate_power_metrics(
-                zone, now, start_time, prev_time
-            );
-            logger::log_poll_result(system_start_time, "benchmark-int".to_string(), new_zone.to_owned());
-            new_zones.push(new_zone);
-        }
-        zones = new_zones.to_vec();
-        new_zones.clear();
+        zones = common::update_measurements(
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+        );
 
         ncurses::clear();
         ncprint!(format!("Running application {:?}\n", program).as_str());
