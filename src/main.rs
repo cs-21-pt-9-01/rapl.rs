@@ -46,6 +46,9 @@ enum Tool {
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf,
+        /// Log in background and post a summary on exit
+        #[structopt(short = "b", long = "bg-log")]
+        background_log: bool,
     },
     #[structopt(about = "Inline output of a given metric")]
     Inline {
@@ -70,9 +73,11 @@ fn main() {
         Tool::Benchmark { runner, program, args, n } => {
             tools::benchmark(args_.delay, runner, program, args, n, system_start_time);
         },
-        Tool::BenchmarkInt { program} => {
-            common::setup_ncurses();
-            tools::benchmark_interactive(program, args_.delay, system_start_time);
+        Tool::BenchmarkInt { program, background_log } => {
+            if !background_log {
+                common::setup_ncurses();
+            }
+            tools::benchmark_interactive(program, args_.delay, system_start_time, background_log);
         },
         Tool::Inline { metric} => {
             tools::inline(metric, args_.delay);
