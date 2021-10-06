@@ -19,7 +19,7 @@ pub(crate) fn log_poll_result(system_start_time: SystemTime, tool: String, zone:
 
         let mut perms = fs::metadata(file_name.to_owned()).unwrap().permissions();
         perms.set_mode(0o666);
-        fs::set_permissions(file_name.to_string(), perms);
+        fs::set_permissions(file_name.to_string(), perms).expect("Failed to set permissions for file");
     } else {
         let file = OpenOptions::new().write(true).create(true).open(file_name).unwrap();
 

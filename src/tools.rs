@@ -57,8 +57,8 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
         let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
     }
 
-    send.send(common::THREAD_KILL);
-    thr.join();
+    send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
+    thr.join().expect("Failed to wait for measurement thread to finish");
 
     let now = Instant::now();
     let new_zones = common::update_measurements(
