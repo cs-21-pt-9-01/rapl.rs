@@ -1,9 +1,11 @@
 #[macro_use] mod common;
 mod tools;
 mod models;
+mod logger;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 #[derive(StructOpt)]
 #[structopt(
@@ -57,18 +59,19 @@ enum Tool {
 }
 
 fn main() {
+    let system_start_time = SystemTime::now();
     let args = Cli::from_args();
     match args.tool {
         Tool::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(args.delay);
+            tools::live_measurement(args.delay, system_start_time);
         },
         Tool::Benchmark { runner, program, args, n} => {
             tools::benchmark(runner, program, args, n);
         },
         Tool::BenchmarkInt { program} => {
             common::setup_ncurses();
-            tools::benchmark_interactive(program, args.delay);
+            tools::benchmark_interactive(program, args.delay, system_start_time);
         },
         Tool::Inline { metric} => {
             tools::inline(metric, args.delay);
