@@ -56,6 +56,17 @@ enum Tool {
     List {
         /// What to list
         input: String
+    },
+    #[structopt(about = "Measure power consumption of a bash script")]
+    Script { 
+        /// Measure a bash script
+        #[structopt(parse(from_os_str))]
+        program: PathBuf,
+        /// Args for <program>
+        args: Vec<String>,
+        /// Amount of times to run benchmark
+        #[structopt(short = "n", default_value = "1")]
+        n: u64
     }
 }
 
@@ -79,6 +90,11 @@ fn main() {
         },
         Tool::List { input } => {
             tools::list(input);
+        },
+        Tool::Script {program, args, n} => {
+            let mut bash = PathBuf::new();
+            bash.push("bash");
+            tools::benchmark(args_.delay, bash, program, args, n, system_start_time);
         }
     }
 }
