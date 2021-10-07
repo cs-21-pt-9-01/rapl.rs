@@ -29,9 +29,9 @@ enum Tool {
     Live {},
     #[structopt(about = "Measure power consumption of a oneshot script")]
     Benchmark {
-        /// Benchmark runner application, e.g., python
-        #[structopt(parse(from_os_str))]
-        runner: PathBuf,
+        /// Benchmark requires <runner> to execute
+        #[structopt(short = "r", long = "runner", parse(from_os_str))]
+        runner: Option<PathBuf>,
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf,
@@ -43,6 +43,9 @@ enum Tool {
     },
     #[structopt(about = "Measure power consumption of an interactive application")]
     BenchmarkInt {
+        /// Benchmark requires <runner> to execute
+        #[structopt(short = "r", long = "runner", parse(from_os_str))]
+        runner: Option<PathBuf>,
         /// Benchmark program
         #[structopt(parse(from_os_str))]
         program: PathBuf,
@@ -70,9 +73,9 @@ fn main() {
         Tool::Benchmark { runner, program, args, n } => {
             tools::benchmark(args_.delay, runner, program, args, n, system_start_time);
         },
-        Tool::BenchmarkInt { program} => {
+        Tool::BenchmarkInt { runner, program} => {
             common::setup_ncurses();
-            tools::benchmark_interactive(program, args_.delay, system_start_time);
+            tools::benchmark_interactive(runner, program, args_.delay, system_start_time);
         },
         Tool::Inline { metric} => {
             tools::inline(metric, args_.delay);
