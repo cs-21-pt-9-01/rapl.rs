@@ -20,7 +20,7 @@ struct Cli {
     delay: u64,
     /// Terminate after time limit (s)
     #[structopt(short = "t", long = "terminate-after")]
-    run_time_limit: u64,
+    run_time_limit: Option<u64>,
     /// Tool to use
     #[structopt(subcommand)]
     tool: Tool

@@ -9,10 +9,11 @@ use std::process::{Command};
 use std::io;
 use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: u64) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
     let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
+    let run_time_limit = run_time_limit.unwrap_or(0);
 
     let start_time = Instant::now();
     let mut prev_time: Instant = start_time;
@@ -36,7 +37,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
             break;
         }
 
-        if now.duration_since(start_time).as_secs() >= run_time_limit {
+        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
             common::kill_ncurses();
             print_headers!();
             print_result_line!(&zones);
@@ -78,10 +79,11 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime, run_time_limit: u64) {
+pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
+    let run_time_limit = run_time_limit.unwrap_or(0);
 
     let start_time = Instant::now();
     let mut prev_time = start_time;
@@ -108,7 +110,7 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
             break;
         }
 
-        if now.duration_since(start_time).as_secs() >= run_time_limit {
+        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
             common::kill_ncurses();
             print_headers!();
             print_result_line!(&zones);
