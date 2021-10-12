@@ -46,14 +46,15 @@ cs-21-pt-9-01
 RAPL measurement tool
 
 USAGE:
-    raplrs [OPTIONS] <SUBCOMMAND>
+    raplrs [OPTIONS] --terminate-after <run-time-limit> <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -d, --delay <delay>    Delay between polls (ms) [default: 1000]
+    -d, --delay <delay>                       Delay between polls (ms) [default: 1000]
+    -t, --terminate-after <run-time-limit>    Terminate after time limit (s)
 
 SUBCOMMANDS:
     benchmark        Measure power consumption of a oneshot script
