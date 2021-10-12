@@ -9,7 +9,7 @@ use std::process::{Command};
 use std::io;
 use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: u64) {
     let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -33,6 +33,14 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
 
         if ncurses::getch() == common::KEY_CODE_EXIT {
             ncurses::endwin();
+            break;
+        }
+
+        if now.duration_since(start_time).as_secs() >= run_time_limit {
+            common::kill_ncurses();
+            print_headers!();
+            print_result_line!(&zones);
+            println!();
             break;
         }
 
@@ -70,7 +78,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime) {
+pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime, run_time_limit: u64) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -97,6 +105,14 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
 
         if ncurses::getch() == common::KEY_CODE_EXIT {
             ncurses::endwin();
+            break;
+        }
+
+        if now.duration_since(start_time).as_secs() >= run_time_limit {
+            common::kill_ncurses();
+            print_headers!();
+            print_result_line!(&zones);
+            println!();
             break;
         }
 
