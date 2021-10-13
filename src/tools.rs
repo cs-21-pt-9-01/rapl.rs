@@ -9,10 +9,11 @@ use std::process::{Command, Stdio};
 use std::io;
 use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
     let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
+    let run_time_limit = run_time_limit.unwrap_or(0);
 
     let start_time = Instant::now();
     let mut prev_time: Instant = start_time;
@@ -33,6 +34,14 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
 
         if ncurses::getch() == common::KEY_CODE_EXIT {
             ncurses::endwin();
+            break;
+        }
+
+        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
+            common::kill_ncurses();
+            print_headers!();
+            print_result_line!(&zones);
+            println!();
             break;
         }
 
@@ -78,10 +87,12 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 }
 
 pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
-                                    system_start_time: SystemTime, background_log: bool) {
+                                    system_start_time: SystemTime, background_log: bool,
+                                    run_time_limit: Option<u64>) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
+    let run_time_limit = run_time_limit.unwrap_or(0);
 
     let start_time = Instant::now();
     let mut prev_time = start_time;
@@ -135,6 +146,14 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
             print_result_line!(&zones, true);
 
             prev_time = now;
+
+            if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
+                common::kill_ncurses();
+                print_headers!();
+                print_result_line!(&zones);
+                println!();
+                break;
+            }
 
             if ncurses::getch() == common::KEY_CODE_EXIT {
                 ncurses::endwin();

@@ -212,6 +212,11 @@ pub(crate) fn setup_ncurses() {
     }
 }
 
+pub(crate) fn kill_ncurses() {
+    ncurses::endwin();
+    ncurses::reset_shell_mode();
+}
+
 pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
                                       start_time: Instant, prev_time: Instant) -> models::RAPLData {
     let cur_power_j = read_power(zone.path.to_owned());

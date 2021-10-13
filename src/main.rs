@@ -18,6 +18,9 @@ struct Cli {
     /// Delay between polls (ms)
     #[structopt(short = "d", long = "delay", default_value = "1000")]
     delay: u64,
+    /// Terminate after time limit (s)
+    #[structopt(short = "t", long = "terminate-after")]
+    run_time_limit: Option<u64>,
     /// Tool to use
     #[structopt(subcommand)]
     tool: Tool
@@ -71,7 +74,7 @@ fn main() {
     match args_.tool {
         Tool::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(args_.delay, system_start_time);
+            tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit);
         },
         Tool::Benchmark { runner, program, args, n } => {
             tools::benchmark(args_.delay, runner, program, args, n, system_start_time);
@@ -80,7 +83,7 @@ fn main() {
             if !background_log {
                 common::setup_ncurses();
             }
-            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log);
+            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit);
         },
         Tool::Inline { metric} => {
             tools::inline(metric, args_.delay);
