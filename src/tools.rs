@@ -40,7 +40,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime) {
     }
 }
 
-pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args: Vec<String>,
+pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
                         n: u64, system_start_time: SystemTime) {
     let tool_name = "benchmark".to_string();
     let zones = common::setup_rapl_data();
@@ -54,7 +54,14 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
             println!("Running benchmark iteration {}", i + 1);
         }
 
-        let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
+            },
+            None => {
+                let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
+            }
+        }
     }
 
     send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
@@ -70,8 +77,8 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime,
-                                    background_log: bool) {
+pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
+                                    system_start_time: SystemTime, background_log: bool) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -85,8 +92,16 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
         let (send, recv) = mpsc::channel();
         let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
 
-        let _out = Command::new(program.to_owned()).stdout(Stdio::inherit())
-            .stdin(Stdio::inherit()).stderr(Stdio::inherit()).output().expect("Couldn't execute command");
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).stdout(Stdio::inherit())
+                    .stdin(Stdio::inherit()).stderr(Stdio::inherit()).output().expect("Couldn't execute command");
+            },
+            None => {
+                let _out = Command::new(program.to_owned()).stdout(Stdio::inherit())
+                    .stdin(Stdio::inherit()).stderr(Stdio::inherit()).output().expect("Couldn't execute command");
+            }
+        }
 
         send.send(common::THREAD_KILL).expect("Failed to communicate with measurement thread");
         thr.join().expect("Failed to wait for measurement thread to finish");
@@ -99,7 +114,14 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
         print_result_line!(&zones);
         println!();
     } else {
-        let _out = Command::new(program.to_owned()).spawn().expect("Couldn't execute command");
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).spawn().expect("Couldn't execute command");
+            },
+            None => {
+                let _out = Command::new(program.to_owned()).spawn().expect("Couldn't execute command");
+            }
+        }
 
         loop {
             now = Instant::now();
