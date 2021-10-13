@@ -5,7 +5,7 @@ use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::sync::mpsc;
 use std::path::PathBuf;
-use std::process::{Command};
+use std::process::{Command, Stdio};
 use std::io;
 use std::io::Write;
 
@@ -49,7 +49,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
     }
 }
 
-pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args: Vec<String>,
+pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
                         n: u64, system_start_time: SystemTime) {
     let tool_name = "benchmark".to_string();
     let zones = common::setup_rapl_data();
@@ -63,7 +63,14 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
             println!("Running benchmark iteration {}", i + 1);
         }
 
-        let _out = Command::new(&runner).arg(&program).args(&args).output().expect("Failed to execute command");
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
+            },
+            None => {
+                let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
+            }
+        }
     }
 
     send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
@@ -79,7 +86,9 @@ pub(crate) fn benchmark(poll_delay: u64, runner: PathBuf, program: PathBuf, args
     println!();
 }
 
-pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
+pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
+                                    system_start_time: SystemTime, background_log: bool,
+                                    run_time_limit: Option<u64>) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -90,35 +99,69 @@ pub(crate) fn benchmark_interactive(program: PathBuf, poll_delay: u64, system_st
     #[allow(unused_assignments)]
     let mut now = start_time;
 
-    let _out = Command::new(program.to_owned()).spawn().expect("Couldn't execute command");
+    if background_log {
+        let (send, recv) = mpsc::channel();
+        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
 
-    loop {
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).stdout(Stdio::inherit())
+                    .stdin(Stdio::inherit()).stderr(Stdio::inherit()).output().expect("Couldn't execute command");
+            },
+            None => {
+                let _out = Command::new(program.to_owned()).stdout(Stdio::inherit())
+                    .stdin(Stdio::inherit()).stderr(Stdio::inherit()).output().expect("Couldn't execute command");
+            }
+        }
+
+        send.send(common::THREAD_KILL).expect("Failed to communicate with measurement thread");
+        thr.join().expect("Failed to wait for measurement thread to finish");
+
         now = Instant::now();
         zones = common::update_measurements(
             zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
         );
-
-        ncurses::clear();
-        ncprint!(format!("Running application {:?}\n", program).as_str());
-        ncprint!(format!("'q' or ctrl+c to exit. Ctrl+c will kill {:?} as well\n", program).as_str());
-        print_result_line!(&zones, true);
-
-        prev_time = now;
-
-        if ncurses::getch() == common::KEY_CODE_EXIT {
-            ncurses::endwin();
-            break;
+        print_headers!();
+        print_result_line!(&zones);
+        println!();
+    } else {
+        match runner.to_owned() {
+            Some(r) => {
+                let _out = Command::new(&r).arg(&program).spawn().expect("Couldn't execute command");
+            },
+            None => {
+                let _out = Command::new(program.to_owned()).spawn().expect("Couldn't execute command");
+            }
         }
 
-        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
-            common::kill_ncurses();
-            print_headers!();
-            print_result_line!(&zones);
-            println!();
-            break;
-        }
+        loop {
+            now = Instant::now();
+            zones = common::update_measurements(
+                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+            );
 
-        thread::sleep(sleep);
+            ncurses::clear();
+            ncprint!(format!("Running application {:?}\n", program).as_str());
+            ncprint!(format!("'q' or ctrl+c to exit. Ctrl+c will kill {:?} as well\n", program).as_str());
+            print_result_line!(&zones, true);
+
+            prev_time = now;
+
+            if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
+                common::kill_ncurses();
+                print_headers!();
+                print_result_line!(&zones);
+                println!();
+                break;
+            }
+
+            if ncurses::getch() == common::KEY_CODE_EXIT {
+                ncurses::endwin();
+                break;
+            }
+
+            thread::sleep(sleep);
+        }
     }
 }
 
