@@ -47,6 +47,9 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 
         thread::sleep(sleep);
     }
+    print_headers!();
+    print_result_line!(&zones);
+    println!();
 }
 
 pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
@@ -121,9 +124,6 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
         zones = common::update_measurements(
             zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
         );
-        print_headers!();
-        print_result_line!(&zones);
-        println!();
     } else {
         match runner.to_owned() {
             Some(r) => {
@@ -160,6 +160,9 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
             thread::sleep(sleep);
         }
     }
+    print_headers!();
+    print_result_line!(&zones);
+    println!();
 }
 
 pub(crate) fn inline(metric: String, poll_delay: u64) {
