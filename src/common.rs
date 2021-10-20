@@ -275,3 +275,14 @@ pub(crate) fn update_measurements(zones: Vec<models::RAPLData>, now: Instant, st
 
     return res.to_vec();
 }
+
+pub(crate) fn should_terminate(limit: u64, now: Instant, start_time: Instant) -> bool {
+    return limit > 0 && now.duration_since(start_time).as_secs() >= limit
+}
+
+pub(crate) fn terminate(zones: &Vec<models::RAPLData>) {
+    kill_ncurses();
+    print_headers!();
+    print_result_line!(zones);
+    println!();
+}

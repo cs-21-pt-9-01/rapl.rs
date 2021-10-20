@@ -37,11 +37,8 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
             break;
         }
 
-        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
-            common::kill_ncurses();
-            print_headers!();
-            print_result_line!(&zones);
-            println!();
+        if common::should_terminate(run_time_limit, now, start_time) {
+            common::terminate(&zones);
             break;
         }
 
@@ -147,11 +144,8 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
             prev_time = now;
 
-            if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
-                common::kill_ncurses();
-                print_headers!();
-                print_result_line!(&zones);
-                println!();
+            if common::should_terminate(run_time_limit, now, start_time) {
+                common::terminate(&zones);
                 break;
             }
 
