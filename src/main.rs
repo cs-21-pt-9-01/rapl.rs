@@ -65,6 +65,11 @@ enum Tool {
     List {
         /// What to list
         input: String
+    },
+    #[structopt(about = "Pretty print last measurement of .csv file")]
+    PrettyPrint {
+        /// File to print from
+        file: PathBuf
     }
 }
 
@@ -90,6 +95,9 @@ fn main() {
         },
         Tool::List { input } => {
             tools::list(input);
+        },
+        Tool::PrettyPrint { file } => {
+            tools::pretty_print(file)
         }
     }
 }

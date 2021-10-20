@@ -1,6 +1,9 @@
+use std::fs::OpenOptions;
 use crate::common;
 use crate::task;
+use crate::models;
 
+use csv;
 use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::sync::mpsc;
@@ -274,4 +277,20 @@ pub(crate) fn list(input: String) {
             println!("Malformed input, valid choices: {:?}", choices);
         }
     }
+}
+
+pub(crate) fn pretty_print(file: PathBuf) {
+    let mut rdr = csv::Reader::from_path(file).unwrap();
+    let zones = common::list_rapl();
+    let mut out: Vec<models::RAPLData> = vec![];
+    for res in rdr.deserialize() {
+        let r: models::RAPLData = res.unwrap();
+        out.push(r);
+    }
+
+    let last = &out[out.len() - zones.len()..].to_vec();
+
+    print_headers!();
+    print_result_line!(&last);
+    println!();
 }
