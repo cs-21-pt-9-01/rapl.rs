@@ -19,6 +19,7 @@ $ sudo ./target/release/raplrs
 ```
 
 *Note:* if you are running a shell script that calls some command you would usually run from your command line, you need to make sure that said command is present in your `/usr/bin` dir.
+For example, [`crispy-doom`](http://manpages.ubuntu.com/manpages/cosmic/man6/crispy-doom.6.html) on Ubuntu by default installs to `/usr/games`, which is not recognized when running `raplrs` as root.
 
 ## Other stuff
 
