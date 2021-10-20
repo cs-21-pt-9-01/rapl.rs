@@ -52,27 +52,33 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
     println!();
 }
 
-pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        n: u64, system_start_time: SystemTime, name: String) {
-    let tool_name = "benchmark".to_string();
-    let zones = common::setup_rapl_data();
-    let start_time = Instant::now();
-
-    let (send, recv) = mpsc::channel();
-    let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
-
+pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
+                            n: u64, name: String) {
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
         }
 
-        match runner.to_owned() {
-            Some(r) => {
-                let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
-            },
-            None => {
-                let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
-            }
+        benchmark(poll_delay, runner.to_owned(), program.to_owned(), args.to_owned(), name.to_owned());
+    }
+}
+
+pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
+                        name: String) {
+    let tool_name = "benchmark".to_string();
+    let zones = common::setup_rapl_data();
+    let start_time = Instant::now();
+    let iteration_start_time = SystemTime::now();
+
+    let (send, recv) = mpsc::channel();
+    let thr = task::spawn_measurement_thread(start_time, iteration_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
+
+    match runner.to_owned() {
+        Some(r) => {
+            let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
+        },
+        None => {
+            let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
         }
     }
 
@@ -81,7 +87,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
     let now = Instant::now();
     let new_zones = common::update_measurements(
-        zones, now, start_time, start_time, system_start_time, tool_name.to_owned(), name.to_owned()
+        zones, now, start_time, start_time, iteration_start_time, tool_name.to_owned(), name.to_owned()
     );
 
     print_headers!();
