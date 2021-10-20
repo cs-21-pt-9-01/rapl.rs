@@ -7,7 +7,8 @@ use std::thread::JoinHandle;
 use std::sync::mpsc::Receiver;
 
 pub(crate) fn spawn_measurement_thread(start_time: Instant, system_start_time: SystemTime,
-                                       recv: Receiver<i8>, poll_delay: u64, tool_name: String) -> JoinHandle<()> {
+                                       recv: Receiver<i8>, poll_delay: u64, tool_name: String,
+                                       benchmark_name: String) -> JoinHandle<()> {
     let thr = thread::spawn(move || {
         let mut tzones = common::setup_rapl_data().to_owned();
         let mut thread_zones: Vec<models::RAPLData> = vec![];
@@ -21,7 +22,7 @@ pub(crate) fn spawn_measurement_thread(start_time: Instant, system_start_time: S
         while run {
             now = Instant::now();
             tzones = common::update_measurements(
-                tzones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+                tzones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), benchmark_name.to_owned()
             );
             thread_zones.clear();
             prev_time = now;
@@ -33,7 +34,7 @@ pub(crate) fn spawn_measurement_thread(start_time: Instant, system_start_time: S
                         if msg == common::THREAD_KILL {
                             let now = Instant::now();
                             let _ = common::update_measurements(
-                                tzones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+                                tzones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), benchmark_name.to_owned()
                             );
                             run = false;
                             break;

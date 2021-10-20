@@ -12,7 +12,7 @@ use std::process::{Command, Stdio};
 use std::io;
 use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>, name: String) {
     let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -26,7 +26,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
     loop {
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
         );
 
         ncurses::clear();
@@ -50,13 +50,13 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 }
 
 pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        n: u64, system_start_time: SystemTime) {
+                        n: u64, system_start_time: SystemTime, name: String) {
     let tool_name = "benchmark".to_string();
     let zones = common::setup_rapl_data();
     let start_time = Instant::now();
 
     let (send, recv) = mpsc::channel();
-    let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
+    let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
 
     for i in 0..n {
         if n > 1 {
@@ -78,7 +78,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
     let now = Instant::now();
     let new_zones = common::update_measurements(
-        zones, now, start_time, start_time, system_start_time, tool_name.to_owned()
+        zones, now, start_time, start_time, system_start_time, tool_name.to_owned(), name.to_owned()
     );
 
     print_headers!();
@@ -88,7 +88,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
 pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
                                     system_start_time: SystemTime, background_log: bool,
-                                    run_time_limit: Option<u64>) {
+                                    run_time_limit: Option<u64>, name: String) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -101,7 +101,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
     if background_log {
         let (send, recv) = mpsc::channel();
-        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
+        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
 
         match runner.to_owned() {
             Some(r) => {
@@ -119,7 +119,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
         );
         print_headers!();
         print_result_line!(&zones);
@@ -137,7 +137,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
         loop {
             now = Instant::now();
             zones = common::update_measurements(
-                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
             );
 
             ncurses::clear();

@@ -21,6 +21,9 @@ struct Cli {
     /// Terminate after time limit (s)
     #[structopt(short = "t", long = "terminate-after")]
     run_time_limit: Option<u64>,
+    /// Benchmark name - to easily discern csv output
+    #[structopt(short = "n", long = "name")]
+    name: Option<String>,
     /// Tool to use
     #[structopt(subcommand)]
     tool: Tool
@@ -76,19 +79,20 @@ enum Tool {
 fn main() {
     let system_start_time = SystemTime::now();
     let args_ = Cli::from_args();
+    let name = args_.name.unwrap_or(String::from(""));
     match args_.tool {
         Tool::Live { } => {
             common::setup_ncurses();
-            tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit);
+            tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit, name);
         },
         Tool::Benchmark { runner, program, args, n } => {
-            tools::benchmark(args_.delay, runner, program, args, n, system_start_time);
+            tools::benchmark(args_.delay, runner, program, args, n, system_start_time, name);
         },
         Tool::BenchmarkInt { runner, program, background_log } => {
             if !background_log {
                 common::setup_ncurses();
             }
-            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit);
+            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit, name);
         },
         Tool::Inline { metric} => {
             tools::inline(metric, args_.delay);
