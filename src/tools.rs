@@ -1,8 +1,10 @@
 use crate::common;
 use crate::task;
 use crate::models;
+use crate::logger;
 
 use csv;
+use std::collections::HashMap;
 use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::sync::mpsc;
@@ -233,4 +235,74 @@ pub(crate) fn measure_isolate_data(poll_delay: u64, minutes: u64, system_start_t
     print_headers!();
     print_result_line!(&zones);
     println!();
+}
+
+pub(crate) fn generate_isolate_data(csv_file: PathBuf) {
+    let mut rdr = csv::Reader::from_path(csv_file).unwrap();
+    let zones = common::list_rapl();
+    let mut map = HashMap::new();
+    let mut out_map = HashMap::new();
+
+    for res in rdr.deserialize() {
+        let r: models::RAPLData = res.unwrap();
+        map.entry(r.zone.to_owned()).or_insert(vec![]).push(r);
+    }
+
+    for zone in zones {
+        let zone_data = map.entry(zone.name.to_owned()).or_insert(vec![]);
+        zone_data.remove(0);
+        let data_len = zone_data.len();
+        let mut power_j_step = vec![];
+        let mut watts_step = vec![];
+        let mut watts_since_last_step = vec![];
+        let mut watt_h_step = vec![];
+        let mut kwatt_h_step = vec![];
+
+        for n in 0..data_len - 1 {
+            if n < data_len {
+                power_j_step.push(zone_data[n + 1].power_j - zone_data[n].power_j);
+                watt_h_step.push(common::watt_hours(zone_data[n + 1].power_j) -
+                    common::watt_hours(zone_data[n].power_j));
+                kwatt_h_step.push(common::kwatt_hours(zone_data[n + 1].power_j) -
+                    common::kwatt_hours(zone_data[n].power_j));
+            }
+            watts_step.push(zone_data[n].watts);
+            watts_since_last_step.push(zone_data[n].watts_since_last);
+        }
+
+        out_map.insert(zone.name, models::IsolateData{
+            power_j: models::StatData{
+                min: power_j_step.iter().cloned().fold(0./0., f64::min),
+                max: power_j_step.iter().cloned().fold(0./0., f64::max),
+                avg: power_j_step.iter().sum::<f64>() / power_j_step.len() as f64,
+                total: zone_data.last().unwrap().power_j
+            },
+            watts: models::StatData{
+                min: watts_step.iter().cloned().fold(0./0., f64::min),
+                max: watts_step.iter().cloned().fold(0./0., f64::max),
+                avg: watts_step.iter().sum::<f64>() / watts_step.len() as f64,
+                total: 0.
+            },
+            watts_since_last: models::StatData{
+                min: watts_since_last_step.iter().cloned().fold(0./0., f64::min),
+                max: watts_since_last_step.iter().cloned().fold(0./0., f64::max),
+                avg: watts_since_last_step.iter().sum::<f64>() / watts_since_last_step.len() as f64,
+                total: 0.
+            },
+            watt_h: models::StatData{
+                min: watt_h_step.iter().cloned().fold(0./0., f64::min),
+                max: watt_h_step.iter().cloned().fold(0./0., f64::max),
+                avg: watt_h_step.iter().sum::<f64>() / watt_h_step.len() as f64,
+                total: common::watt_hours(zone_data.last().unwrap().power_j)
+            },
+            kwatt_h: models::StatData{
+                min: kwatt_h_step.iter().cloned().fold(0./0., f64::min),
+                max: kwatt_h_step.iter().cloned().fold(0./0., f64::max),
+                avg: kwatt_h_step.iter().sum::<f64>() / kwatt_h_step.len() as f64,
+                total: common::kwatt_hours(zone_data.last().unwrap().power_j)
+            }
+        });
+    }
+
+    logger::log_isolate_data(out_map);
 }

@@ -112,6 +112,7 @@ fn main() {
             match file {
                 Some(path) => {
                     // generate data
+                    tools::generate_isolate_data(path);
                 },
                 _ => {
                     // measure data basis
