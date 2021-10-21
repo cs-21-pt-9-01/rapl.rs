@@ -264,14 +264,26 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
 }
 
 pub(crate) fn update_measurements(zones: Vec<models::RAPLData>, now: Instant, start_time: Instant,
-                                  prev_time: Instant, system_start_time: SystemTime, tool_name: String) -> Vec<models::RAPLData> {
+                                  prev_time: Instant, system_start_time: SystemTime, tool_name: String,
+                                  benchmark_name: String) -> Vec<models::RAPLData> {
     let mut res: Vec<models::RAPLData> = vec![];
 
     for zone in zones {
         let new_zone = calculate_power_metrics(zone, now, start_time, prev_time);
-        logger::log_poll_result(system_start_time, tool_name.to_owned(), new_zone.to_owned());
+        logger::log_poll_result(system_start_time, tool_name.to_owned(), new_zone.to_owned(), benchmark_name.to_owned());
         res.push(new_zone);
     }
 
     return res.to_vec();
+}
+
+pub(crate) fn should_terminate(limit: u64, now: Instant, start_time: Instant) -> bool {
+    return limit > 0 && now.duration_since(start_time).as_secs() >= limit
+}
+
+pub(crate) fn terminate(zones: &Vec<models::RAPLData>) {
+    kill_ncurses();
+    print_headers!();
+    print_result_line!(zones);
+    println!();
 }

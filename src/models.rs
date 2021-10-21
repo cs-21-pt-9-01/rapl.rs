@@ -1,5 +1,5 @@
 use serde;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
 pub(crate) struct RAPLZone {
@@ -7,9 +7,9 @@ pub(crate) struct RAPLZone {
     pub name: String
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct RAPLData {
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, skip_deserializing)]
     pub path: String,
     pub zone: String,
     pub time_elapsed: f64,

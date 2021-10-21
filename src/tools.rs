@@ -1,15 +1,15 @@
 use crate::common;
 use crate::task;
+use crate::models;
 
+use csv;
 use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::sync::mpsc;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::io;
-use std::io::Write;
 
-pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>) {
+pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>, name: String) {
     let tool_name = "live".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -23,7 +23,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
     loop {
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
         );
 
         ncurses::clear();
@@ -37,39 +37,45 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
             break;
         }
 
-        if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
-            common::kill_ncurses();
-            print_headers!();
-            print_result_line!(&zones);
-            println!();
+        if common::should_terminate(run_time_limit, now, start_time) {
+            common::terminate(&zones);
             break;
         }
 
         thread::sleep(sleep);
     }
+    print_headers!();
+    print_result_line!(&zones);
+    println!();
 }
 
-pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        n: u64, system_start_time: SystemTime) {
-    let tool_name = "benchmark".to_string();
-    let zones = common::setup_rapl_data();
-    let start_time = Instant::now();
-
-    let (send, recv) = mpsc::channel();
-    let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
-
+pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
+                            n: u64, name: String) {
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
         }
 
-        match runner.to_owned() {
-            Some(r) => {
-                let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
-            },
-            None => {
-                let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
-            }
+        benchmark(poll_delay, runner.to_owned(), program.to_owned(), args.to_owned(), name.to_owned());
+    }
+}
+
+pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
+                        name: String) {
+    let tool_name = "benchmark".to_string();
+    let zones = common::setup_rapl_data();
+    let start_time = Instant::now();
+    let iteration_start_time = SystemTime::now();
+
+    let (send, recv) = mpsc::channel();
+    let thr = task::spawn_measurement_thread(start_time, iteration_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
+
+    match runner.to_owned() {
+        Some(r) => {
+            let _out = Command::new(&r).arg(&program).args(&args).output().expect("Failed to execute command");
+        },
+        None => {
+            let _out = Command::new(&program).args(&args).output().expect("Failed to execute command");
         }
     }
 
@@ -78,7 +84,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
     let now = Instant::now();
     let new_zones = common::update_measurements(
-        zones, now, start_time, start_time, system_start_time, tool_name.to_owned()
+        zones, now, start_time, start_time, iteration_start_time, tool_name.to_owned(), name.to_owned()
     );
 
     print_headers!();
@@ -88,7 +94,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
 pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
                                     system_start_time: SystemTime, background_log: bool,
-                                    run_time_limit: Option<u64>) {
+                                    run_time_limit: Option<u64>, name: String) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
@@ -101,7 +107,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
     if background_log {
         let (send, recv) = mpsc::channel();
-        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned());
+        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
 
         match runner.to_owned() {
             Some(r) => {
@@ -119,11 +125,8 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
         );
-        print_headers!();
-        print_result_line!(&zones);
-        println!();
     } else {
         match runner.to_owned() {
             Some(r) => {
@@ -137,7 +140,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
         loop {
             now = Instant::now();
             zones = common::update_measurements(
-                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned()
+                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
             );
 
             ncurses::clear();
@@ -147,11 +150,8 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
             prev_time = now;
 
-            if run_time_limit > 0 && now.duration_since(start_time).as_secs() >= run_time_limit {
-                common::kill_ncurses();
-                print_headers!();
-                print_result_line!(&zones);
-                println!();
+            if common::should_terminate(run_time_limit, now, start_time) {
+                common::terminate(&zones);
                 break;
             }
 
@@ -163,109 +163,9 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
             thread::sleep(sleep);
         }
     }
-}
-
-pub(crate) fn inline(metric: String, poll_delay: u64) {
-    let choices = vec!["joules", "avg_watt", "avg_watt_curr", "watt_h", "kwatt_h"];
-    let file_path = "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0".to_string();
-    match metric.as_str() {
-        "joules" => {
-            inline_joules(poll_delay, file_path);
-        },
-        "avg_watt" => {
-            inline_avg_watt(poll_delay, file_path);
-        },
-        "avg_watt_curr" => {
-            inline_avg_watt_current(poll_delay, file_path);
-        },
-        "watt_h" => {
-            inline_watt_h(poll_delay, file_path);
-        },
-        "kwatt_h" => {
-            inline_kwatt_h(poll_delay, file_path);
-        }
-        _ => {
-            println!("Couldnt parse input; choices: {:?}", choices);
-        }
-    }
-}
-
-fn inline_joules(poll_delay: u64, file_path: String) {
-    let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power(file_path.to_owned());
-
-    loop {
-        let cur_power = common::read_power(file_path.to_owned());
-
-        print!("\r{:.3}", cur_power - start_power);
-        io::stdout().flush().unwrap();
-
-        thread::sleep(sleep);
-    }
-}
-
-fn inline_avg_watt(poll_delay: u64, file_path: String) {
-    let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power(file_path.to_owned());
-    let start_time = Instant::now();
-
-    loop {
-        let cur_power = common::read_power(file_path.to_owned());
-        let joules = cur_power - start_power;
-
-        print!("\r{:.3}", joules / start_time.elapsed().as_secs_f64());
-        io::stdout().flush().unwrap();
-
-        thread::sleep(sleep);
-    }
-}
-
-fn inline_avg_watt_current(poll_delay: u64, file_path: String) {
-    let sleep = Duration::from_millis(poll_delay);
-    let mut prev_power = common::read_power(file_path.to_owned());
-    let mut prev_time = Instant::now();
-
-    loop {
-        let cur_power = common::read_power(file_path.to_owned());
-        let joules = cur_power - prev_power;
-
-        print!("\r{:.3}", joules / prev_time.elapsed().as_secs_f64());
-        io::stdout().flush().unwrap();
-
-        prev_time = Instant::now();
-        prev_power = cur_power;
-        thread::sleep(sleep);
-    }
-}
-
-fn inline_watt_h(poll_delay: u64, file_path: String) {
-    let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power(file_path.to_owned());
-
-    loop {
-        let cur_power = common::read_power(file_path.to_owned());
-        let joules = cur_power - start_power;
-
-        print!("\r{:.5}", common::watt_hours(joules));
-        io::stdout().flush().unwrap();
-
-        thread::sleep(sleep);
-    }
-}
-
-fn inline_kwatt_h(poll_delay: u64, file_path: String) {
-    let sleep = Duration::from_millis(poll_delay);
-    let start_power = common::read_power(file_path.to_owned());
-
-    loop {
-        let cur_power = common::read_power(file_path.to_owned());
-        let joules = cur_power - start_power;
-
-        print!("\r{:.5}", common::kwatt_hours(joules));
-        io::stdout().flush().unwrap();
-
-        thread::sleep(sleep);
-    }
+    print_headers!();
+    print_result_line!(&zones);
+    println!();
 }
 
 pub(crate) fn list(input: String) {
@@ -280,4 +180,20 @@ pub(crate) fn list(input: String) {
             println!("Malformed input, valid choices: {:?}", choices);
         }
     }
+}
+
+pub(crate) fn pretty_print(file: PathBuf) {
+    let mut rdr = csv::Reader::from_path(file).unwrap();
+    let zones = common::list_rapl();
+    let mut out: Vec<models::RAPLData> = vec![];
+    for res in rdr.deserialize() {
+        let r: models::RAPLData = res.unwrap();
+        out.push(r);
+    }
+
+    let last = &out[out.len() - zones.len()..].to_vec();
+
+    print_headers!();
+    print_result_line!(&last);
+    println!();
 }

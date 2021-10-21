@@ -18,14 +18,19 @@ $ cargo build --release
 $ sudo ./target/release/raplrs
 ```
 
+*Note:* if you are running a shell script that calls some command you would usually run from your command line, you need to make sure that said command is present in your `/usr/bin` dir.
+For example, [`crispy-doom`](http://manpages.ubuntu.com/manpages/cosmic/man6/crispy-doom.6.html) on Ubuntu by default installs to `/usr/games`, which is not recognized when running `raplrs` as root.
+
 ## Other stuff
 
 ### Scripts
 Scripts are located in `./benchmarks/`. We discern between three types:
 
 - `interactive`: an application that expects input, e.g., a GUI. `stdout` and `stderr` should be piped to `/dev/null`, see `./benchmark/interactive/cura.sh` for an example.
-- `macro`: larger benchmarks that perform several tasks. TBA, `./benchmark/macro`
+- `macro`: larger benchmarks that perform several tasks. `./benchmark/macro`
 - `micro`: smaller benchmarks that perform a single task. `./benchmark/micro`
+
+Micro- and macrobenchmarks should ideally terminate on their own, or be easily killable without interacting with the terminal `raplrs` is being run from.
 
 ### CSV output
 `raplrs` outputs data from each poll in `csv` format. Sample output:
@@ -46,7 +51,7 @@ cs-21-pt-9-01
 RAPL measurement tool
 
 USAGE:
-    raplrs [OPTIONS] --terminate-after <run-time-limit> <SUBCOMMAND>
+    raplrs [OPTIONS] <SUBCOMMAND>
 
 FLAGS:
     -h, --help       Prints help information
@@ -54,6 +59,7 @@ FLAGS:
 
 OPTIONS:
     -d, --delay <delay>                       Delay between polls (ms) [default: 1000]
+    -n, --name <name>                         Benchmark name - to easily discern csv output
     -t, --terminate-after <run-time-limit>    Terminate after time limit (s)
 
 SUBCOMMANDS:
@@ -63,7 +69,13 @@ SUBCOMMANDS:
     inline           Inline output of a given metric
     list             List utility for various RAPL-related information
     live             Live measurements
+    pretty-print     Pretty print last measurement of .csv file
 ```
+
+The following system-wide options are available:
+- `-d, --delay`: the delay between RAPL polls - that is, the delay between retrieving RAPL measurements from the system in milliseconds. Default is 1.000ms.
+- `-n, --name`: an identifier for the benchmark, in addition to the mode that is being run - used to name the output `.csv` file(s). For example, `raplrs -n idle live` would name the `.csv` file something like `idle-live-420.69.csv`.
+- `-t, --terminate-after`: the time limit for the benchmark in seconds. For example, `raplrs -t 30 live` would terminate the measurements after 30 seconds.
 
 ### `live`
 Perform live, continuous measurements of power consumption. 
@@ -90,30 +102,32 @@ uncore                      21.01866                    20.68407                
 ```
 
 ### `benchmark`
-Benchmark a single, oneshot program, optionally `n` times.
+Benchmark a single, oneshot program, optionally `n` times. If `-n` is passed, `n` `.csv` files will be generated as well.
+By default, `benchmark` expects `<program>` to be executable - alternatively you can specify a runner, e.g., `bash`, with `-r, --runner`.
+
 
 ```
 raplrs-benchmark 0.1.0
 Measure power consumption of a oneshot script
 
 USAGE:
-    raplrs benchmark [OPTIONS] <runner> <program> [args]...
+    raplrs benchmark [OPTIONS] <program> [args]...
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -n <n>        Amount of times to run benchmark [default: 1]
+    -n <n>                   Amount of times to run benchmark [default: 1]
+    -r, --runner <runner>    Benchmark requires <runner> to execute
 
 ARGS:
-    <runner>     Benchmark runner application, e.g., python
     <program>    Benchmark program
     <args>...    Args for <program>
 ```
 
 ```
-$ sudo ./raplrs benchmark /usr/bin/bash benchmark/micro/fib.sh -n 3
+$ sudo ./raplrs benchmark benchmark/micro/fib.sh -n 3
 Running benchmark iteration 1
 Running benchmark iteration 2
 Running benchmark iteration 3
@@ -125,17 +139,23 @@ uncore                      5.76750                     4.55624                 
 
 ### `benchmark-int`
 Benchmark an interactive program.
+By default, `benchmark-int` expects `<program>` to be executable - alternatively you can specify a runner, e.g., `bash`, with `-r, --runner`.
+Additionally, will log results in terminal in an `ncurses` window. To retain availability of the terminal and only log in the background, pass `-b, --bg-log`.
 
 ```
 raplrs-benchmark-int 0.1.0
 Measure power consumption of an interactive application
 
 USAGE:
-    raplrs benchmark-int <program>
+    raplrs benchmark-int [FLAGS] [OPTIONS] <program>
 
 FLAGS:
+    -b, --bg-log     Log in background and post a summary on exit
     -h, --help       Prints help information
     -V, --version    Prints version information
+
+OPTIONS:
+    -r, --runner <runner>    Benchmark requires <runner> to execute
 
 ARGS:
     <program>    Benchmark program
@@ -149,35 +169,6 @@ zone                        time(s)                     J                       
 package-0                   24.02615                    473.20264                   19.69537                    20.30874                    0.13145                     0.00013
 core                        24.02617                    346.57723                   14.42504                    14.78349                    0.09627                     0.00010
 uncore                      24.02619                    28.36818                    1.18072                     1.53713                     0.00788                     0.00001
-```
-
-### `inline`
-Inline measurement output for different metrics.
-
-Eligible metrics: 
-- `joules`: joule consumption
-- `avg_watt`: average watt usage, accumulated since start of execution
-- `avg_watt_curr`: average watt usage, at current instant for each update
-- `watt_h`: watt hours consumed, accumulated since start of execution
-- `kwatt_h`: kilowatt hours consumed, accumulated since start of execution
-
-```
-raplrs-inline 0.1.0
-
-USAGE:
-    raplrs inline [OPTIONS] <metric>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-ARGS:
-    <metric>    What to measure
-```
-
-```
-$ sudo ./raplrs inline watt_h
-0.23560
 ```
 
 ### `list`
@@ -206,4 +197,22 @@ $ sudo ./raplrs list zones
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0", name: "package-0" }
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:0", name: "core" }
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:1", name: "uncore" }
+```
+
+### `pretty-print`
+Pretty print (like the output measurements from measurement tools) the last measurement of a `.csv` file.
+
+```
+raplrs-pretty-print 0.1.0
+Pretty print last measurement of .csv file
+
+USAGE:
+    raplrs pretty-print <file>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <file>    File to print from
 ```

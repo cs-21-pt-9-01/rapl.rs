@@ -7,8 +7,14 @@ use std::fs::OpenOptions;
 use std::path::Path;
 use std::os::unix::fs::PermissionsExt;
 
-pub(crate) fn log_poll_result(system_start_time: SystemTime, tool: String, zone: models::RAPLData) {
-    let file_name = format!("{}-{}.csv", tool, system_start_time.duration_since(UNIX_EPOCH)
+pub(crate) fn log_poll_result(system_start_time: SystemTime, tool: String, zone: models::RAPLData,
+                              benchmark_name: String) {
+    let mut benchmark_name = benchmark_name;
+    if benchmark_name != "" {
+        benchmark_name = benchmark_name + "-";
+    }
+
+    let file_name = format!("{}{}-{}.csv", benchmark_name, tool, system_start_time.duration_since(UNIX_EPOCH)
         .expect("Failed to check duration").as_secs_f64());
 
     if Path::new(file_name.to_owned().as_str()).exists() {
