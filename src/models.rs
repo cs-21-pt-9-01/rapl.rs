@@ -21,7 +21,7 @@ pub(crate) struct RAPLData {
     pub prev_power_reading: f64
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct IsolateData {
     pub power_j: StatData,
     pub watts: StatData,
@@ -30,7 +30,7 @@ pub(crate) struct IsolateData {
     pub kwatt_h: StatData
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct StatData {
     pub min: f64,
     pub max: f64,

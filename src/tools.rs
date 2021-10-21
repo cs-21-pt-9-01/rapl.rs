@@ -27,7 +27,8 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
     loop {
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time,
+            tool_name.to_owned(), name.to_owned(), None
         );
 
         ncurses::clear();
@@ -54,25 +55,29 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 }
 
 pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                            n: u64, name: String) {
+                            n: u64, name: String, isolate_file: Option<PathBuf>) {
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
         }
 
-        benchmark(poll_delay, runner.to_owned(), program.to_owned(), args.to_owned(), name.to_owned());
+        benchmark(poll_delay, runner.to_owned(), program.to_owned(),
+                  args.to_owned(), name.to_owned(), isolate_file.to_owned());
     }
 }
 
 pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        name: String) {
+                        name: String, isolate_file: Option<PathBuf>) {
     let tool_name = "benchmark".to_string();
     let zones = common::setup_rapl_data();
+    let isolate_map = common::read_isolated_data(isolate_file);
     let start_time = Instant::now();
     let iteration_start_time = SystemTime::now();
 
     let (send, recv) = mpsc::channel();
-    let thr = task::spawn_measurement_thread(start_time, iteration_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
+    let thr = task::spawn_measurement_thread(
+        start_time, iteration_start_time, recv, poll_delay,
+        tool_name.to_owned(), name.to_owned(), isolate_map.to_owned());
 
     match runner.to_owned() {
         Some(r) => {
@@ -88,7 +93,8 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
     let now = Instant::now();
     let new_zones = common::update_measurements(
-        zones, now, start_time, start_time, iteration_start_time, tool_name.to_owned(), name.to_owned()
+        zones, now, start_time, start_time, iteration_start_time,
+        tool_name.to_owned(), name.to_owned(), isolate_map
     );
 
     print_headers!();
@@ -98,10 +104,11 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
 
 pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, poll_delay: u64,
                                     system_start_time: SystemTime, background_log: bool,
-                                    run_time_limit: Option<u64>, name: String) {
+                                    run_time_limit: Option<u64>, name: String, isolate_file: Option<PathBuf>) {
     let tool_name = "benchmark-int".to_string();
     let sleep = Duration::from_millis(poll_delay);
     let mut zones = common::setup_rapl_data();
+    let isolate_map = common::read_isolated_data(isolate_file);
     let run_time_limit = run_time_limit.unwrap_or(0);
 
     let start_time = Instant::now();
@@ -111,7 +118,9 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
     if background_log {
         let (send, recv) = mpsc::channel();
-        let thr = task::spawn_measurement_thread(start_time, system_start_time, recv, poll_delay, tool_name.to_owned(), name.to_owned());
+        let thr = task::spawn_measurement_thread(
+            start_time, system_start_time, recv, poll_delay, tool_name.to_owned(),
+            name.to_owned(), isolate_map.to_owned());
 
         match runner.to_owned() {
             Some(r) => {
@@ -129,7 +138,8 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
 
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
+            zones.to_owned(), now, start_time, prev_time, system_start_time,
+            tool_name.to_owned(), name.to_owned(), isolate_map
         );
     } else {
         match runner.to_owned() {
@@ -144,7 +154,8 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
         loop {
             now = Instant::now();
             zones = common::update_measurements(
-                zones.to_owned(), now, start_time, prev_time, system_start_time, tool_name.to_owned(), name.to_owned()
+                zones.to_owned(), now, start_time, prev_time, system_start_time,
+                tool_name.to_owned(), name.to_owned(), isolate_map.to_owned()
             );
 
             ncurses::clear();
@@ -217,7 +228,8 @@ pub(crate) fn measure_isolate_data(poll_delay: u64, minutes: u64, system_start_t
     loop {
         now = Instant::now();
         zones = common::update_measurements(
-            zones.to_owned(), now, start_time, prev_time, system_start_time, "isolate".to_string(), "idle".to_string()
+            zones.to_owned(), now, start_time, prev_time, system_start_time,
+            "isolate".to_string(), "idle".to_string(), None
         );
         prev_time = now;
 

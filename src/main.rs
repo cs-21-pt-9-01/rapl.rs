@@ -87,20 +87,20 @@ fn main() {
     let system_start_time = SystemTime::now();
     let args_ = Cli::from_args();
     let name = args_.name.unwrap_or(String::from(""));
-    let isolate_file = args_.isolate_file.unwrap_or(PathBuf::from(""));
     match args_.tool {
         Tool::Live { } => {
             common::setup_ncurses();
             tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit, name);
         },
         Tool::Benchmark { runner, program, args, n } => {
-            tools::do_benchmarks(args_.delay, runner, program, args, n, name);
+            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file);
         },
         Tool::BenchmarkInt { runner, program, background_log } => {
             if !background_log {
                 common::setup_ncurses();
             }
-            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit, name);
+            tools::benchmark_interactive(runner, program, args_.delay, system_start_time,
+                                         background_log, args_.run_time_limit, name, args_.isolate_file);
         },
         Tool::List { input } => {
             tools::list(input);
