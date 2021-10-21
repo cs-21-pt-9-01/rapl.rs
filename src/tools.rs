@@ -43,7 +43,7 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
         }
 
         if common::should_terminate(run_time_limit, now, start_time) {
-            common::terminate(&zones);
+            common::terminate();
             break;
         }
 
@@ -166,7 +166,7 @@ pub(crate) fn benchmark_interactive(runner: Option<PathBuf>, program: PathBuf, p
             prev_time = now;
 
             if common::should_terminate(run_time_limit, now, start_time) {
-                common::terminate(&zones);
+                common::terminate();
                 break;
             }
 
