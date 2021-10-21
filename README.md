@@ -59,6 +59,7 @@ FLAGS:
 
 OPTIONS:
     -d, --delay <delay>                       Delay between polls (ms) [default: 1000]
+    -i, --isolate-from <isolate-file>         Idle data to isolate measurements from - see README.md for details
     -n, --name <name>                         Benchmark name - to easily discern csv output
     -t, --terminate-after <run-time-limit>    Terminate after time limit (s)
 
@@ -66,7 +67,7 @@ SUBCOMMANDS:
     benchmark        Measure power consumption of a oneshot script
     benchmark-int    Measure power consumption of an interactive application
     help             Prints this message or the help of the given subcommand(s)
-    inline           Inline output of a given metric
+    isolate          Tools for measuring and generating isolation data
     list             List utility for various RAPL-related information
     live             Live measurements
     pretty-print     Pretty print last measurement of .csv file
@@ -76,6 +77,7 @@ The following system-wide options are available:
 - `-d, --delay`: the delay between RAPL polls - that is, the delay between retrieving RAPL measurements from the system in milliseconds. Default is 1.000ms.
 - `-n, --name`: an identifier for the benchmark, in addition to the mode that is being run - used to name the output `.csv` file(s). For example, `raplrs -n idle live` would name the `.csv` file something like `idle-live-420.69.csv`.
 - `-t, --terminate-after`: the time limit for the benchmark in seconds. For example, `raplrs -t 30 live` would terminate the measurements after 30 seconds.
+- `-i, --isolate-from`: idle data to use to isolate software consumption. This should be generated through [`isolate`](#isolate).
 
 ### `live`
 Perform live, continuous measurements of power consumption. 
