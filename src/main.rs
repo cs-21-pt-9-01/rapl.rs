@@ -24,6 +24,9 @@ struct Cli {
     /// Benchmark name - to easily discern csv output
     #[structopt(short = "n", long = "name")]
     name: Option<String>,
+    /// Idle data to isolate measurements from - see README.md for details
+    #[structopt(short = "i", long = "isolate-from", parse(from_os_str))]
+    isolate_file: Option<PathBuf>,
     /// Tool to use
     #[structopt(subcommand)]
     tool: Tool
@@ -68,6 +71,15 @@ enum Tool {
     PrettyPrint {
         /// File to print from
         file: PathBuf
+    },
+    #[structopt(about = "Tools for measuring and generating isolation data")]
+    Isolate {
+        /// Measure data as a basis for isolation for n minutes - make sure your system is as idle as possible
+        #[structopt(short = "m", long = "measure", default_value = "30")]
+        measure: u64,
+        /// Generate isolation data based on input .csv file
+        #[structopt(short = "g", long = "generate")]
+        file: Option<PathBuf>
     }
 }
 
@@ -75,6 +87,7 @@ fn main() {
     let system_start_time = SystemTime::now();
     let args_ = Cli::from_args();
     let name = args_.name.unwrap_or(String::from(""));
+    let isolate_file = args_.isolate_file.unwrap_or(PathBuf::from(""));
     match args_.tool {
         Tool::Live { } => {
             common::setup_ncurses();
@@ -94,6 +107,17 @@ fn main() {
         },
         Tool::PrettyPrint { file } => {
             tools::pretty_print(file)
+        },
+        Tool::Isolate { measure, file } => {
+            match file {
+                Some(path) => {
+                    // generate data
+                },
+                _ => {
+                    // measure data basis
+                    tools::measure_isolate_data(args_.delay, measure, system_start_time);
+                }
+            }
         }
     }
 }

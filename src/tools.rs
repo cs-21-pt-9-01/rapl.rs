@@ -8,6 +8,8 @@ use std::thread;
 use std::sync::mpsc;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::io;
+use std::io::Write;
 
 pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, run_time_limit: Option<u64>, name: String) {
     let tool_name = "live".to_string();
@@ -195,5 +197,40 @@ pub(crate) fn pretty_print(file: PathBuf) {
 
     print_headers!();
     print_result_line!(&last);
+    println!();
+}
+
+pub(crate) fn measure_isolate_data(poll_delay: u64, minutes: u64, system_start_time: SystemTime) {
+    let time_limit_sec = minutes * 60;
+    let sleep = Duration::from_millis(poll_delay);
+    let mut zones = common::setup_rapl_data();
+
+    let start_time = Instant::now();
+    let mut prev_time = start_time;
+    #[allow(unused_assignments)]
+    let mut now = start_time;
+
+    println!("Measuring isolation data");
+
+    loop {
+        now = Instant::now();
+        zones = common::update_measurements(
+            zones.to_owned(), now, start_time, prev_time, system_start_time, "isolate".to_string(), "idle".to_string()
+        );
+        prev_time = now;
+
+        print!("\r{} / {} seconds elapsed", now.duration_since(start_time).as_secs(), time_limit_sec);
+        io::stdout().flush().unwrap();
+
+        if time_limit_sec > 0 && now.duration_since(start_time).as_secs() >= time_limit_sec {
+            break;
+        }
+
+        thread::sleep(sleep)
+    }
+
+    println!();
+    print_headers!();
+    print_result_line!(&zones);
     println!();
 }
