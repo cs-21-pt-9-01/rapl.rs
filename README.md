@@ -216,3 +216,30 @@ FLAGS:
 ARGS:
     <file>    File to print from
 ```
+
+### `isolate`
+Measure or generate isolated system consumption data to be used in benchmarks when `-i, --isolate-from` is passed.
+
+By default, `isolate` will measure the system consumption for 30 minutes. 
+Alternatively, a different value (in minutes) can be specified with `-m, --measure`.
+This data will be logged in a file `idle-isolate-420.69.csv` - an example can be seen in `./logs/`.
+
+To generate the necessary data for isolating the software consumption, pass `-g, --generate` with the file generated from `-m, --measure`.
+This will create a JSON file containing `min`, `max`, `avg`, and `total` of the relevant fields used to isolate software consumption.
+
+```
+raplrs-isolate 0.1.0
+Tools for measuring and generating isolation data
+
+USAGE:
+    raplrs isolate [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -g, --generate <file>      Generate isolation data based on input .csv file
+    -m, --measure <measure>    Measure data as a basis for isolation for n minutes - make sure your system is as idle as
+                               possible [default: 30]
+```
