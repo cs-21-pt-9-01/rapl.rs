@@ -1,4 +1,5 @@
 use crate::models;
+use crate::common;
 
 use csv;
 use serde_json;
@@ -12,13 +13,7 @@ use std::os::unix::fs::PermissionsExt;
 
 pub(crate) fn log_poll_result(system_start_time: SystemTime, tool: String, zone: models::RAPLData,
                               benchmark_name: String) {
-    let mut benchmark_name = benchmark_name;
-    if benchmark_name != "" {
-        benchmark_name = benchmark_name + "-";
-    }
-
-    let file_name = format!("{}{}-{}.csv", benchmark_name, tool, system_start_time.duration_since(UNIX_EPOCH)
-        .expect("Failed to check duration").as_secs_f64());
+    let file_name = common::create_log_file_name(benchmark_name, tool, system_start_time);
 
     if Path::new(file_name.to_owned().as_str()).exists() {
         let file = OpenOptions::new().write(true).append(true).open(file_name.to_owned()).unwrap();

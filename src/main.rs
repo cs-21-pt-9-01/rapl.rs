@@ -93,7 +93,7 @@ fn main() {
             tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit, name);
         },
         Tool::Benchmark { runner, program, args, n } => {
-            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file);
+            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file, system_start_time);
         },
         Tool::BenchmarkInt { runner, program, background_log } => {
             if !background_log {

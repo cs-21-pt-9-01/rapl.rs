@@ -5,7 +5,7 @@ use crate::logger;
 use std::fs;
 use std::fs::{DirEntry, OpenOptions};
 use std::path::{Path, PathBuf};
-use std::time::{Instant, SystemTime};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use ncurses;
 
@@ -325,4 +325,28 @@ pub(crate) fn read_isolated_data(isolate_file: Option<PathBuf>) -> Option<HashMa
             None
         }
     }
+}
+
+pub(crate) fn get_last_measurement_from(file: PathBuf) -> Vec<models::RAPLData> {
+    let mut rdr = csv::Reader::from_path(file).unwrap();
+    let zones = list_rapl();
+    let mut out: Vec<models::RAPLData> = vec![];
+    for res in rdr.deserialize() {
+        let r: models::RAPLData = res.unwrap();
+        out.push(r);
+    }
+
+    let last = &out[out.len() - zones.len()..].to_vec();
+
+    return last.to_owned()
+}
+
+pub(crate) fn create_log_file_name(benchmark_name: String, tool: String, system_start_time: SystemTime) -> String {
+    let mut benchmark_name = benchmark_name;
+    if benchmark_name != "" {
+        benchmark_name = benchmark_name + "-";
+    }
+
+    return format!("{}{}-{}.csv", benchmark_name, tool, system_start_time.duration_since(UNIX_EPOCH)
+        .expect("Failed to check duration").as_secs());
 }

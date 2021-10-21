@@ -55,21 +55,21 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 }
 
 pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                            n: u64, name: String, isolate_file: Option<PathBuf>) {
+                            n: u64, name: String, isolate_file: Option<PathBuf>, system_start_time: SystemTime) {
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
         }
 
         benchmark(poll_delay, runner.to_owned(), program.to_owned(),
-                  args.to_owned(), name.to_owned(), isolate_file.to_owned());
+                  args.to_owned(), name.to_owned(), isolate_file.to_owned(),
+                  system_start_time);
     }
 }
 
 pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        name: String, isolate_file: Option<PathBuf>) {
+                        name: String, isolate_file: Option<PathBuf>, system_start_time: SystemTime) {
     let tool_name = "benchmark".to_string();
-    let zones = common::setup_rapl_data();
     let isolate_map = common::read_isolated_data(isolate_file);
     let start_time = Instant::now();
     let iteration_start_time = SystemTime::now();
@@ -91,11 +91,8 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
     send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
     thr.join().expect("Failed to wait for measurement thread to finish");
 
-    let now = Instant::now();
-    let new_zones = common::update_measurements(
-        zones, now, start_time, start_time, iteration_start_time,
-        tool_name.to_owned(), name.to_owned(), isolate_map
-    );
+    let file_name = common::create_log_file_name(name, tool_name, system_start_time);
+    let new_zones = common::get_last_measurement_from(PathBuf::from(file_name));
 
     print_headers!();
     print_result_line!(&new_zones);
@@ -198,15 +195,7 @@ pub(crate) fn list(input: String) {
 }
 
 pub(crate) fn pretty_print(file: PathBuf) {
-    let mut rdr = csv::Reader::from_path(file).unwrap();
-    let zones = common::list_rapl();
-    let mut out: Vec<models::RAPLData> = vec![];
-    for res in rdr.deserialize() {
-        let r: models::RAPLData = res.unwrap();
-        out.push(r);
-    }
-
-    let last = &out[out.len() - zones.len()..].to_vec();
+    let last = common::get_last_measurement_from(file);
 
     print_headers!();
     print_result_line!(&last);
