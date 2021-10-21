@@ -59,11 +59,6 @@ enum Tool {
         #[structopt(short = "b", long = "bg-log")]
         background_log: bool,
     },
-    #[structopt(about = "Inline output of a given metric")]
-    Inline {
-        /// What to measure
-        metric: String,
-    },
     #[structopt(about = "List utility for various RAPL-related information")]
     List {
         /// What to list
@@ -93,9 +88,6 @@ fn main() {
                 common::setup_ncurses();
             }
             tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit, name);
-        },
-        Tool::Inline { metric} => {
-            tools::inline(metric, args_.delay);
         },
         Tool::List { input } => {
             tools::list(input);

@@ -171,35 +171,6 @@ core                        24.02617                    346.57723               
 uncore                      24.02619                    28.36818                    1.18072                     1.53713                     0.00788                     0.00001
 ```
 
-### `inline`
-Inline measurement output for different metrics.
-
-Eligible metrics: 
-- `joules`: joule consumption
-- `avg_watt`: average watt usage, accumulated since start of execution
-- `avg_watt_curr`: average watt usage, at current instant for each update
-- `watt_h`: watt hours consumed, accumulated since start of execution
-- `kwatt_h`: kilowatt hours consumed, accumulated since start of execution
-
-```
-raplrs-inline 0.1.0
-
-USAGE:
-    raplrs inline [OPTIONS] <metric>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-ARGS:
-    <metric>    What to measure
-```
-
-```
-$ sudo ./raplrs inline watt_h
-0.23560
-```
-
 ### `list`
 List utility for various information.
 
