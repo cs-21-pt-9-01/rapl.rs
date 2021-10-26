@@ -24,6 +24,8 @@ By default the entire system consumption is measured, however, it is also possib
     - [Steps](#steps)
 
 ## Installation
+Due to inaccessibility on Windows and MacOS, `raplrs` only runs on Linux systems.
+As such the following steps are only suited for Linux.
 
 ### Setup
 
