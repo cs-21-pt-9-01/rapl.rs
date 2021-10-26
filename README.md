@@ -1,8 +1,27 @@
-# `raplrs`
+# RAPLrs
 A Rust wrapper for Intel's Running Average Power Limit (RAPL) present in Intel CPUs since the Sandy Bridge (2nd) generation.
 
 This wrapper functions mostly as a benchmarking tool, however, it also allows for performing live measurements with terminal output.
 By default the entire system consumption is measured, however, it is also possible to estimate pure software consumption by offsetting the benchmark consumption based on idle system consumption.
+
+## Table of Contents
+
+- [Installatoin](#installation)
+  - [Setup](#setup)
+  - [Build & run](#build--run)
+  - [Troubleshooting notes](#troubleshooting-notes)
+- [Misc](#misc)
+  - [Scripts](#scripts)
+  - [CSV output](#csv-output)
+  - [Isolation data](#isolation-data)
+- [Usage](#usage)
+  - [`live`](#live)
+  - [`benchmark`](#benchmark)
+  - [`benchmark-int`](#benchmark-int)
+  - [`list`](#list)
+  - [`pretty-print`](#pretty-print)
+  - [`isolate`](#isolate)
+    - [Steps](#steps)
 
 ## Installation
 
@@ -34,7 +53,7 @@ For example, [`crispy-doom`](http://manpages.ubuntu.com/manpages/cosmic/man6/cri
 As `raplrs` mostly needs to be run with root access, you need to ensure that any configuration for the benchmark is present where it needs to be.
 That is, under `/` rather than your user directory.
 
-## Other stuff
+## Misc
 
 ### Scripts
 Scripts are located in `./benchmarks/`. We discern between three types:
@@ -58,6 +77,29 @@ uncore,     28.030660372,       39.756702999999106,     1.4183443342235091,     
 ```
 
 A full sample log can be found in `./logs/`.
+
+### Isolation data
+Using [`isolate`](#isolate) as a setup tool, `raplrs` can estimate pure software energy consumption by offsetting the measurements using previously measured idle data of the system consumption.
+What is necessary for this is the output the `isolate` tool - that is, a JSON on the following format:
+
+```json
+[
+  "package-0": {
+    "power_j": {
+      "min": 1.4401819999911822,
+      "max": 3.130302000005031,
+      "avg": 1.5812111187977085,
+      "total": 3315.913507999998
+    },
+    "watts": { ... },
+    "watts_since_last": { ... },
+    "watt_h": { ... },
+    "kwatt_h": { ... }
+  },
+  "core": { ... },
+  ...
+]
+```
 
 ## Usage
 ```
