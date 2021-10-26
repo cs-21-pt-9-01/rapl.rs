@@ -347,6 +347,6 @@ pub(crate) fn create_log_file_name(benchmark_name: String, tool: String, system_
         benchmark_name = benchmark_name + "-";
     }
 
-    return format!("{}{}-{}.csv", benchmark_name, tool, system_start_time.duration_since(UNIX_EPOCH)
-        .expect("Failed to check duration").as_secs());
+    let time = system_start_time.duration_since(UNIX_EPOCH).expect("Failed to check duration").as_secs();
+    return format!("{}{}-{}.csv", benchmark_name, tool, time);
 }
