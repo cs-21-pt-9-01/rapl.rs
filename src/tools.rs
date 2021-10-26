@@ -91,7 +91,7 @@ pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathB
     send.send(common::THREAD_KILL).expect("Failed to contact measurement thread");
     thr.join().expect("Failed to wait for measurement thread to finish");
 
-    let file_name = common::create_log_file_name(name, tool_name, system_start_time);
+    let file_name = common::create_log_file_name(name, tool_name, iteration_start_time);
     let new_zones = common::get_last_measurement_from(PathBuf::from(file_name));
 
     print_headers!();
