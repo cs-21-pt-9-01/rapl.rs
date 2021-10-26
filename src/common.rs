@@ -3,8 +3,8 @@ use crate::models;
 use crate::logger;
 
 use std::fs;
-use std::fs::{DirEntry, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::fs::DirEntry;
+use std::path::PathBuf;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use ncurses;
@@ -289,7 +289,7 @@ pub(crate) fn update_measurements(zones: Vec<models::RAPLData>, now: Instant, st
     let mut res: Vec<models::RAPLData> = vec![];
 
     for zone in zones {
-        let mut new_zone: models::RAPLData = match isolate_map.to_owned() {
+        let new_zone: models::RAPLData = match isolate_map.to_owned() {
             Some(map) => {
                 let iz = map.get(zone.zone.as_str()).unwrap();
                 calculate_isolated_power_metrics(zone.to_owned(), now, start_time, prev_time, iz)

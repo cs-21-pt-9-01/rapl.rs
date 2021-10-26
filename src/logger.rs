@@ -39,6 +39,6 @@ pub(crate) fn log_isolate_data(map: HashMap<String, models::IsolateData>) {
     let mut file = OpenOptions::new().write(true).create(true).open(file_name).unwrap();
     let json = serde_json::to_string_pretty(&map).unwrap();
 
-    file.write(json.as_bytes());
+    file.write(json.as_bytes()).expect("Failed to write isolation data to file");
     drop(file);
 }
