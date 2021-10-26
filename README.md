@@ -6,7 +6,7 @@ By default the entire system consumption is measured, however, it is also possib
 
 ## Table of Contents
 
-- [Installatoin](#installation)
+- [Installation](#installation)
   - [Setup](#setup)
   - [Build & run](#build--run)
   - [Troubleshooting notes](#troubleshooting-notes)
