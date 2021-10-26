@@ -55,20 +55,19 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 }
 
 pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                            n: u64, name: String, isolate_file: Option<PathBuf>, system_start_time: SystemTime) {
+                            n: u64, name: String, isolate_file: Option<PathBuf>) {
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
         }
 
         benchmark(poll_delay, runner.to_owned(), program.to_owned(),
-                  args.to_owned(), name.to_owned(), isolate_file.to_owned(),
-                  system_start_time);
+                  args.to_owned(), name.to_owned(), isolate_file.to_owned());
     }
 }
 
 pub(crate) fn benchmark(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                        name: String, isolate_file: Option<PathBuf>, system_start_time: SystemTime) {
+                        name: String, isolate_file: Option<PathBuf>) {
     let tool_name = "benchmark".to_string();
     let isolate_map = common::read_isolated_data(isolate_file);
     let start_time = Instant::now();
