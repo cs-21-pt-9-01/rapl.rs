@@ -1,4 +1,27 @@
-# RAPL rs
+# RAPLrs
+A Rust wrapper for Intel's Running Average Power Limit (RAPL) present in Intel CPUs since the Sandy Bridge (2nd) generation.
+
+This wrapper functions mostly as a benchmarking tool, however, it also allows for performing live measurements with terminal output.
+By default the entire system consumption is measured, however, it is also possible to estimate pure software consumption by offsetting the benchmark consumption based on idle system consumption.
+
+## Table of Contents
+
+- [Installation](#installation)
+  - [Setup](#setup)
+  - [Build & run](#build--run)
+  - [Troubleshooting notes](#troubleshooting-notes)
+- [Misc](#misc)
+  - [Scripts](#scripts)
+  - [CSV output](#csv-output)
+  - [Isolation data](#isolation-data)
+- [Usage](#usage)
+  - [`live`](#live)
+  - [`benchmark`](#benchmark)
+  - [`benchmark-int`](#benchmark-int)
+  - [`list`](#list)
+  - [`pretty-print`](#pretty-print)
+  - [`isolate`](#isolate)
+    - [Steps](#steps)
 
 ## Installation
 
@@ -16,12 +39,21 @@ $ cargo build --release
 
 # run
 $ sudo ./target/release/raplrs
+
+# for ease of access you can symlink raplrs to /usr/bin - preferably with absolute paths
+$ sudo ln -s /path/to/target/release/raplrs /usr/bin/raplrs
+# and then run with
+$ sudo raplrs
 ```
 
-*Note:* if you are running a shell script that calls some command you would usually run from your command line, you need to make sure that said command is present in your `/usr/bin` dir.
+### Troubleshooting notes
+If you are running a shell script that calls some command you would usually run from your command line, you need to make sure that said command is present in your `/usr/bin` dir.
 For example, [`crispy-doom`](http://manpages.ubuntu.com/manpages/cosmic/man6/crispy-doom.6.html) on Ubuntu by default installs to `/usr/games`, which is not recognized when running `raplrs` as root.
 
-## Other stuff
+As `raplrs` mostly needs to be run with root access, you need to ensure that any configuration for the benchmark is present where it needs to be.
+That is, under `/` rather than your user directory.
+
+## Misc
 
 ### Scripts
 Scripts are located in `./benchmarks/`. We discern between three types:
@@ -33,7 +65,9 @@ Scripts are located in `./benchmarks/`. We discern between three types:
 Micro- and macrobenchmarks should ideally terminate on their own, or be easily killable without interacting with the terminal `raplrs` is being run from.
 
 ### CSV output
-`raplrs` outputs data from each poll in `csv` format. Sample output:
+`raplrs` outputs data from each poll in `csv` format.
+For each measurement, rows according to the available zones in your CPU are appended.
+Sample output:
 
 ```
 zone        time elapsed (s)    power used (joules)     avg watt usage          avg watt usage since last poll  start power (joules)    previous power          previous power reading
@@ -43,6 +77,29 @@ uncore,     28.030660372,       39.756702999999106,     1.4183443342235091,     
 ```
 
 A full sample log can be found in `./logs/`.
+
+### Isolation data
+Using [`isolate`](#isolate) as a setup tool, `raplrs` can estimate pure software energy consumption by offsetting the measurements using previously measured idle data of the system consumption.
+What is necessary for this is the output the `isolate` tool - that is, a JSON on the following format:
+
+```json
+[
+  "package-0": {
+    "power_j": {
+      "min": 1.4401819999911822,
+      "max": 3.130302000005031,
+      "avg": 1.5812111187977085,
+      "total": 3315.913507999998
+    },
+    "watts": { ... },
+    "watts_since_last": { ... },
+    "watt_h": { ... },
+    "kwatt_h": { ... }
+  },
+  "core": { ... },
+  ...
+]
+```
 
 ## Usage
 ```
@@ -94,8 +151,10 @@ FLAGS:
     -V, --version    Prints version information
 ```
 
+#### Examples
+
 ```
-$ sudo ./raplrs live
+$ sudo raplrs live
 Press 'q' to quit
 zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
 package-0                   21.01861                    401.94149                   19.12318                    19.61201                    0.11165                     0.00011
@@ -106,7 +165,7 @@ uncore                      21.01866                    20.68407                
 ### `benchmark`
 Benchmark a single, oneshot program, optionally `n` times. If `-n` is passed, `n` `.csv` files will be generated as well.
 By default, `benchmark` expects `<program>` to be executable - alternatively you can specify a runner, e.g., `bash`, with `-r, --runner`.
-
+Additionally, `benchmark` expects `<program>` to terminate on its own - if this is not the case for your benchmark, see [`benchmark-int`](#benchmark-int).
 
 ```
 raplrs-benchmark 0.1.0
@@ -128,10 +187,14 @@ ARGS:
     <args>...    Args for <program>
 ```
 
+#### Examples
+
 ```
-$ sudo ./raplrs benchmark benchmark/micro/fib.sh -n 3
+$ sudo raplrs benchmark benchmark/micro/fib.sh -n 3
 Running benchmark iteration 1
+# result omitted
 Running benchmark iteration 2
+# result omitted
 Running benchmark iteration 3
 zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
 package-0                   5.76740                     116.93481                   20.27543                    0.00000                     0.03248                     0.00003
@@ -142,7 +205,7 @@ uncore                      5.76750                     4.55624                 
 ### `benchmark-int`
 Benchmark an interactive program.
 By default, `benchmark-int` expects `<program>` to be executable - alternatively you can specify a runner, e.g., `bash`, with `-r, --runner`.
-Additionally, will log results in terminal in an `ncurses` window. To retain availability of the terminal and only log in the background, pass `-b, --bg-log`.
+Additionally, `benchmark-int` will log results in terminal in an `ncurses` window. To retain availability of the terminal and only log in the background, pass `-b, --bg-log`.
 
 ```
 raplrs-benchmark-int 0.1.0
@@ -163,8 +226,10 @@ ARGS:
     <program>    Benchmark program
 ```
 
+#### Examples
+
 ```
-$ sudo ./raplrs benchmark-int benchmark/interactive/cura.sh 
+$ sudo raplrs benchmark-int benchmark/interactive/cura.sh 
 Running application "benchmark/interactive/cura.sh"
 'q' or ctrl+c to exit. Ctrl+c will kill "benchmark/interactive/cura.sh" as well
 zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
@@ -181,7 +246,7 @@ Eligible input:
 
 ```
 raplrs-list 0.1.0
-list
+List utility for various RAPL-related information
 
 USAGE:
     raplrs list <input>
@@ -194,8 +259,10 @@ ARGS:
     <input>    What to list
 ```
 
+#### Examples
+
 ```
-$ sudo ./raplrs list zones
+$ sudo raplrs list zones
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0", name: "package-0" }
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:0", name: "core" }
 RAPLZone { path: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:1", name: "uncore" }
@@ -217,6 +284,16 @@ FLAGS:
 
 ARGS:
     <file>    File to print from
+```
+
+#### Examples
+
+```
+$ raplrs pretty-print some-log.csv
+zone                        time(s)                     J                           avg watt                    avg watt curr               w/h                         kw/h
+package-0                   100.09665                   2180.14650                  21.78043                    21.83721                    0.60560                     0.00061
+core                        100.09672                   1707.28910                  17.05642                    17.26086                    0.47425                     0.00047
+uncore                      100.09676                   87.50553                    0.87421                     0.73465                     0.02431                     0.00002
 ```
 
 ### `isolate`
@@ -244,4 +321,19 @@ OPTIONS:
     -g, --generate <file>      Generate isolation data based on input .csv file
     -m, --measure <measure>    Measure data as a basis for isolation for n minutes - make sure your system is as idle as
                                possible [default: 30]
+```
+
+#### Steps
+```
+# first, ensure a stable, idle environment
+# then measure the system consumption for however long you want with -m <minutes>
+#   this will output a .csv file as "idle-isolate-STAMP.csv"
+$ sudo raplrs isolate -m 30
+
+# then convert the previously measured data to json with relevant information with -g <csv_file>
+#   this will output a .json file as "isolate-data-STAMP.json"
+$ raplrs isolate -g idle-isolate-STAMP.csv
+
+# now use the .json file with the base argument -i, for example
+$ sudo raplrs -i isolate-data-STAMP.json live
 ```
