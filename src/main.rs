@@ -24,6 +24,9 @@ struct Cli {
     /// Benchmark name - to easily discern csv output
     #[structopt(short = "n", long = "name")]
     name: Option<String>,
+    /// Idle data to isolate measurements from - see README.md for details
+    #[structopt(short = "i", long = "isolate-from", parse(from_os_str))]
+    isolate_file: Option<PathBuf>,
     /// Tool to use
     #[structopt(subcommand)]
     tool: Tool
@@ -68,6 +71,15 @@ enum Tool {
     PrettyPrint {
         /// File to print from
         file: PathBuf
+    },
+    #[structopt(about = "Tools for measuring and generating isolation data")]
+    Isolate {
+        /// Measure data as a basis for isolation for n minutes - make sure your system is as idle as possible
+        #[structopt(short = "m", long = "measure", default_value = "30")]
+        measure: u64,
+        /// Generate isolation data based on input .csv file
+        #[structopt(short = "g", long = "generate")]
+        file: Option<PathBuf>
     }
 }
 
@@ -81,19 +93,32 @@ fn main() {
             tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit, name);
         },
         Tool::Benchmark { runner, program, args, n } => {
-            tools::do_benchmarks(args_.delay, runner, program, args, n, name);
+            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file, system_start_time);
         },
         Tool::BenchmarkInt { runner, program, background_log } => {
             if !background_log {
                 common::setup_ncurses();
             }
-            tools::benchmark_interactive(runner, program, args_.delay, system_start_time, background_log, args_.run_time_limit, name);
+            tools::benchmark_interactive(runner, program, args_.delay, system_start_time,
+                                         background_log, args_.run_time_limit, name, args_.isolate_file);
         },
         Tool::List { input } => {
             tools::list(input);
         },
         Tool::PrettyPrint { file } => {
             tools::pretty_print(file)
+        },
+        Tool::Isolate { measure, file } => {
+            match file {
+                Some(path) => {
+                    // generate data
+                    tools::generate_isolate_data(path);
+                },
+                _ => {
+                    // measure data basis
+                    tools::measure_isolate_data(args_.delay, measure, system_start_time);
+                }
+            }
         }
     }
 }

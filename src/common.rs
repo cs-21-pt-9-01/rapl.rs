@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use crate::models;
 use crate::logger;
 
 use std::fs;
-use std::fs::{DirEntry};
-use std::time::{Instant, SystemTime};
+use std::fs::DirEntry;
+use std::path::PathBuf;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use ncurses;
 
@@ -263,13 +265,39 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
     }
 }
 
+pub(crate) fn calculate_isolated_power_metrics(
+    zone: models::RAPLData,
+    now: Instant,
+    start_time: Instant,
+    prev_time: Instant,
+    isolated_zone: &models::IsolateData) -> models::RAPLData {
+    let mut data = calculate_power_metrics(zone, now, start_time, prev_time);
+
+    data = models::RAPLData{
+        power_j: data.power_j - isolated_zone.power_j.avg,
+        watts: data.watts - isolated_zone.watts.avg,
+        watts_since_last: data.watts_since_last - isolated_zone.watts_since_last.avg,
+        ..data
+    };
+
+    return data
+}
+
 pub(crate) fn update_measurements(zones: Vec<models::RAPLData>, now: Instant, start_time: Instant,
                                   prev_time: Instant, system_start_time: SystemTime, tool_name: String,
-                                  benchmark_name: String) -> Vec<models::RAPLData> {
+                                  benchmark_name: String, isolate_map: Option<HashMap<String, models::IsolateData>>) -> Vec<models::RAPLData> {
     let mut res: Vec<models::RAPLData> = vec![];
 
     for zone in zones {
-        let new_zone = calculate_power_metrics(zone, now, start_time, prev_time);
+        let new_zone: models::RAPLData = match isolate_map.to_owned() {
+            Some(map) => {
+                let iz = map.get(zone.zone.as_str()).unwrap();
+                calculate_isolated_power_metrics(zone.to_owned(), now, start_time, prev_time, iz)
+            },
+            _ => {
+                calculate_power_metrics(zone.to_owned(), now, start_time, prev_time)
+            }
+        };
         logger::log_poll_result(system_start_time, tool_name.to_owned(), new_zone.to_owned(), benchmark_name.to_owned());
         res.push(new_zone);
     }
@@ -281,9 +309,44 @@ pub(crate) fn should_terminate(limit: u64, now: Instant, start_time: Instant) ->
     return limit > 0 && now.duration_since(start_time).as_secs() >= limit
 }
 
-pub(crate) fn terminate(zones: &Vec<models::RAPLData>) {
+pub(crate) fn terminate() {
     kill_ncurses();
-    print_headers!();
-    print_result_line!(zones);
-    println!();
+}
+
+pub(crate) fn read_isolated_data(isolate_file: Option<PathBuf>) -> Option<HashMap<String, models::IsolateData>> {
+    return match isolate_file {
+        Some(path) => {
+            let data = fs::read(path).expect("Couldn't read file");
+            let map: HashMap<String, models::IsolateData> = serde_json::from_str(
+                String::from_utf8(data).unwrap().as_str()).unwrap();
+            Some(map)
+        },
+        _ => {
+            None
+        }
+    }
+}
+
+pub(crate) fn get_last_measurement_from(file: PathBuf) -> Vec<models::RAPLData> {
+    let mut rdr = csv::Reader::from_path(file).unwrap();
+    let zones = list_rapl();
+    let mut out: Vec<models::RAPLData> = vec![];
+    for res in rdr.deserialize() {
+        let r: models::RAPLData = res.unwrap();
+        out.push(r);
+    }
+
+    let last = &out[out.len() - zones.len()..].to_vec();
+
+    return last.to_owned()
+}
+
+pub(crate) fn create_log_file_name(benchmark_name: String, tool: String, system_start_time: SystemTime) -> String {
+    let mut benchmark_name = benchmark_name;
+    if benchmark_name != "" {
+        benchmark_name = benchmark_name + "-";
+    }
+
+    return format!("{}{}-{}.csv", benchmark_name, tool, system_start_time.duration_since(UNIX_EPOCH)
+        .expect("Failed to check duration").as_secs());
 }
