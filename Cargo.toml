@@ -1,7 +1,11 @@
 [package]
 name = "raplrs"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2018"
+authors = ["cs-21-pt-9-01"]
+repository = "https://github.com/cs-21-pt-9-01/rapl.rs"
+license = "GPL3"
+keywords = ["RAPL", "intel-rapl", "energy", "power"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
