@@ -55,7 +55,8 @@ pub(crate) fn live_measurement(poll_delay: u64, system_start_time: SystemTime, r
 }
 
 pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: PathBuf, args: Vec<String>,
-                            n: u64, name: String, isolate_file: Option<PathBuf>) {
+                            n: u64, name: String, isolate_file: Option<PathBuf>, interval: u64) {
+    let sleep = Duration::from_secs(interval);
     for i in 0..n {
         if n > 1 {
             println!("Running benchmark iteration {}", i + 1);
@@ -63,6 +64,11 @@ pub(crate) fn do_benchmarks(poll_delay: u64, runner: Option<PathBuf>, program: P
 
         benchmark(poll_delay, runner.to_owned(), program.to_owned(),
                   args.to_owned(), name.to_owned(), isolate_file.to_owned());
+
+        if interval > 0 && i + 1 < n {
+            println!("Sleeping for {} seconds before next benchmark run", interval);
+            thread::sleep(sleep);
+        }
     }
 }
 
