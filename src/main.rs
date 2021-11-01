@@ -48,7 +48,10 @@ enum Tool {
         args: Vec<String>,
         /// Amount of times to run benchmark
         #[structopt(short = "n", default_value = "1")]
-        n: u64
+        n: u64,
+        /// Interval between benchmark runs in seconds
+        #[structopt(short = "i", long = "interval", default_value = "0")]
+        interval: u64
     },
     #[structopt(about = "Measure power consumption of an interactive application")]
     BenchmarkInt {
@@ -92,8 +95,8 @@ fn main() {
             common::setup_ncurses();
             tools::live_measurement(args_.delay, system_start_time, args_.run_time_limit, name);
         },
-        Tool::Benchmark { runner, program, args, n } => {
-            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file);
+        Tool::Benchmark { runner, program, args, n, interval } => {
+            tools::do_benchmarks(args_.delay, runner, program, args, n, name, args_.isolate_file, interval);
         },
         Tool::BenchmarkInt { runner, program, background_log } => {
             if !background_log {
