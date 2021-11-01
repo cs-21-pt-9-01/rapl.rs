@@ -169,6 +169,8 @@ Benchmark a single, oneshot program, optionally `n` times. If `-n` is passed, `n
 By default, `benchmark` expects `<program>` to be executable - alternatively you can specify a runner, e.g., `bash`, with `-r, --runner`.
 Additionally, `benchmark` expects `<program>` to terminate on its own - if this is not the case for your benchmark, see [`benchmark-int`](#benchmark-int).
 
+To allow a cooldown period between benchmarks, specify an interval in seconds with `-i, --interval`.
+
 ```
 raplrs-benchmark 0.1.0
 Measure power consumption of a oneshot script
@@ -181,6 +183,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+    -i, --interval <interval>    Interval between benchmark runs in seconds [default: 0]
     -n <n>                   Amount of times to run benchmark [default: 1]
     -r, --runner <runner>    Benchmark requires <runner> to execute
 
