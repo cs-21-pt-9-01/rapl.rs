@@ -1,3 +1,5 @@
+extern crate systemstat;
+
 use std::collections::HashMap;
 use crate::models;
 use crate::logger;
@@ -8,6 +10,7 @@ use std::path::PathBuf;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use ncurses;
+use systemstat::Platform;
 
 pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 
@@ -46,7 +49,7 @@ pub(crate) fn spacing(line: String) -> String {
 }
 
 pub(crate) fn print_headers(ncurses: bool) {
-    let headers = vec!["zone", "time(s)", "J", "avg watt", "avg watt curr", "w/h", "kw/h"];
+    let headers = vec!["zone", "time(s)", "J", "avg watt", "avg watt curr", "w/h", "kw/h", "temp(c)"];
     let mut line: String = "".to_owned();
 
     for h in headers {
@@ -87,11 +90,16 @@ macro_rules! ncprint {
 
 pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
     let mut line: String = "\r".repeat(zones.len()).to_owned();
+    let sys = systemstat::System::new();
+    let temp = match sys.cpu_temp(){
+        Ok(cpu_temp) => cpu_temp,
+        Err(_x) => 1.0_f32
+    };
 
     for zone in zones {
         let watt_hours = watt_hours(zone.power_j);
         let kwatt_hours = kwatt_hours(zone.power_j);
-        let fields = vec![zone.time_elapsed, zone.power_j, zone.watts, zone.watts_since_last, watt_hours, kwatt_hours];
+        let fields = vec![zone.time_elapsed, zone.power_j, zone.watts, zone.watts_since_last, watt_hours, kwatt_hours, temp.into()];
         let zone_name = zone.zone.to_owned();
         line.push_str(format!("{}{}", zone_name.to_owned(), spacing(zone_name.to_owned())).as_str());
 

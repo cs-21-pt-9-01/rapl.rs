@@ -1,3 +1,5 @@
+extern crate systemstat;
+
 use crate::common;
 use crate::task;
 use crate::models;
