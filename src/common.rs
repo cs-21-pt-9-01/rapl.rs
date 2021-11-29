@@ -203,7 +203,8 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
             watts_since_last: 0.,
             start_power,
             prev_power: 0.,
-            prev_power_reading: start_power
+            prev_power_reading: start_power,
+            temp: 0.
         };
         zones.push(data);
     }
@@ -230,6 +231,7 @@ pub(crate) fn kill_ncurses() {
 pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
                                       start_time: Instant, prev_time: Instant) -> models::RAPLData {
     let cur_power_j = read_power(zone.path.to_owned());
+    let sys = systemstat::System::new();
 
     #[allow(unused_assignments)]
     let mut power_j = 0.;
@@ -260,6 +262,11 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         watts_since_last = (power_j - zone.power_j) / now.duration_since(prev_time).as_secs_f64();
     }
 
+    let temperature = match sys.cpu_temp(){
+        Ok(cpu_temp) => cpu_temp,
+        Err(_x) => 1.0_f32
+    };
+
     return models::RAPLData{
         path: zone.path,
         zone: zone.zone,
@@ -269,7 +276,8 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         watts_since_last,
         start_power: zone.start_power,
         prev_power: zone.power_j,
-        prev_power_reading: cur_power_j
+        prev_power_reading: cur_power_j,
+        temp: temperature.into()
     }
 }
 

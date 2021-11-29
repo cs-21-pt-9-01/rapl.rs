@@ -19,6 +19,7 @@ pub(crate) struct RAPLData {
     pub start_power: f64,
     pub prev_power: f64,
     pub prev_power_reading: f64,
+    pub temp: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
