@@ -238,13 +238,14 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
     let mut watts = 0.;
     let mut watts_since_last = 0.;
 
+    let power_limit = read_power_limit(zone.path.to_owned());
+
     // if RAPL overflow has occurred
     // or if we have done a full RAPL cycle
-    if zone.start_power >= cur_power_j || zone.power_j >= cur_power_j {
+    if zone.start_power >= cur_power_j || zone.power_j >= power_limit {
         // if our previous reading was pre-overflow, we simply add the new reading
         // otherwise we add the difference
         if zone.prev_power_reading > cur_power_j {
-            let power_limit = read_power_limit(zone.path.to_owned());
             power_j = (power_limit - zone.prev_power_reading) + cur_power_j + zone.power_j;
         } else {
             power_j = (cur_power_j - zone.prev_power_reading) + zone.power_j;
