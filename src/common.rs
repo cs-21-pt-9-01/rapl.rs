@@ -1,5 +1,3 @@
-extern crate systemstat;
-
 use std::collections::HashMap;
 use crate::models;
 use crate::logger;
@@ -8,9 +6,10 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::PathBuf;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::process::{Command, Stdio};
 
 use ncurses;
-use systemstat::Platform;
+use regex::Regex;
 
 pub(crate) const UJ_TO_J_FACTOR: f64 = 1000000.;
 
@@ -90,16 +89,11 @@ macro_rules! ncprint {
 
 pub(crate) fn print_result_line(zones: &Vec<models::RAPLData>, ncurses: bool) {
     let mut line: String = "\r".repeat(zones.len()).to_owned();
-    let sys = systemstat::System::new();
-    let temp = match sys.cpu_temp(){
-        Ok(cpu_temp) => cpu_temp,
-        Err(_x) => 1.0_f32
-    };
 
     for zone in zones {
         let watt_hours = watt_hours(zone.power_j);
         let kwatt_hours = kwatt_hours(zone.power_j);
-        let fields = vec![zone.time_elapsed, zone.power_j, zone.watts, zone.watts_since_last, watt_hours, kwatt_hours, temp.into()];
+        let fields = vec![zone.time_elapsed, zone.power_j, zone.watts, zone.watts_since_last, watt_hours, kwatt_hours, zone.temp];
         let zone_name = zone.zone.to_owned();
         line.push_str(format!("{}{}", zone_name.to_owned(), spacing(zone_name.to_owned())).as_str());
 
@@ -191,6 +185,7 @@ fn parse_rapl_dir(item: DirEntry) -> Option<models::RAPLZone> {
 pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
     let sys_zones = list_rapl();
     let mut zones: Vec<models::RAPLData> = vec![];
+    let temperature = get_cpu_temp();
 
     for z in sys_zones {
         let start_power = read_power(z.path.to_owned());
@@ -204,7 +199,7 @@ pub(crate) fn setup_rapl_data() -> Vec<models::RAPLData> {
             start_power,
             prev_power: 0.,
             prev_power_reading: start_power,
-            temp: 0.
+            temp: temperature
         };
         zones.push(data);
     }
@@ -231,7 +226,6 @@ pub(crate) fn kill_ncurses() {
 pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
                                       start_time: Instant, prev_time: Instant) -> models::RAPLData {
     let cur_power_j = read_power(zone.path.to_owned());
-    let sys = systemstat::System::new();
 
     #[allow(unused_assignments)]
     let mut power_j = 0.;
@@ -263,10 +257,7 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         watts_since_last = (power_j - zone.power_j) / now.duration_since(prev_time).as_secs_f64();
     }
 
-    let temperature = match sys.cpu_temp(){
-        Ok(cpu_temp) => cpu_temp,
-        Err(_x) => 1.0_f32
-    };
+    let temperature = get_cpu_temp();
 
     return models::RAPLData{
         path: zone.path,
@@ -278,7 +269,7 @@ pub(crate) fn calculate_power_metrics(zone: models::RAPLData, now: Instant,
         start_power: zone.start_power,
         prev_power: zone.power_j,
         prev_power_reading: cur_power_j,
-        temp: temperature.into()
+        temp: temperature
     }
 }
 
@@ -366,4 +357,40 @@ pub(crate) fn create_log_file_name(benchmark_name: String, tool: String, system_
 
     let time = system_start_time.duration_since(UNIX_EPOCH).expect("Failed to check duration").as_secs();
     return format!("{}{}-{}.csv", benchmark_name, tool, time);
+}
+
+pub(crate) fn get_cpu_temp() -> f64 {
+    let sensors = Command::new("sensors")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    let grep = Command::new("grep")
+        .arg("Core")
+        .stdin(sensors.stdout.unwrap())
+        .stdout(Stdio::piped())
+        .output()
+        .unwrap();
+
+    let output = String::from_utf8_lossy(&grep.stdout).to_string();
+    let split = output.split("\n");
+
+    let re = Regex::new(r"\d+\.\d+").unwrap();
+    let mut core_count = 0;
+    let mut temp_total = 0.;
+
+    for s in split {
+        if s == "" { continue }
+
+        let core_temp = s.split("(").collect::<Vec<&str>>()[0];
+
+        let temp = re.find(core_temp).unwrap().as_str().parse::<f64>().unwrap();
+
+        core_count += 1;
+        temp_total += temp;
+    }
+
+    let avg_temp = temp_total / core_count as f64;
+
+    return avg_temp;
 }
