@@ -7,6 +7,7 @@ By default the entire system consumption is measured, however, it is also possib
 ## Table of Contents
 
 - [Installation](#installation)
+  - [Dependencies](#dependencies)
   - [Setup](#setup)
   - [Build & run](#build--run)
   - [Troubleshooting notes](#troubleshooting-notes)
@@ -26,6 +27,10 @@ By default the entire system consumption is measured, however, it is also possib
 ## Installation
 Due to inaccessibility on Windows and MacOS, `raplrs` only runs on Linux systems.
 As such the following steps are only suited for Linux.
+
+### Dependencies
+In addition to the Rust dependencies listed in `Cargo.toml`, rapl.rs has an OS-level dependency used for measuring CPU temperatures: `sensors`.
+This dependency is contained in the `lm-sensors` (Ubuntu) and `lm_sensors` (Arch) package.
 
 ### Setup
 
